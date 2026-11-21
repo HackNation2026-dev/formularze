@@ -1,5 +1,5 @@
 ---
-wersja: 0.2.0
+wersja: 0.3.0
 aktualizacja: 2026-11-21
 status: dokumentacja przygotowawcza
 ---
@@ -39,3 +39,7 @@ To **rekomendacja Fable, nie decyzja zespołu**. [ADR-001](ADR-001-stos.md) pozo
 - Nazwy słowników w referencjach (`TERYT_DOWODOWY`, `Kraje`) różnią się od dokumentu słowników.
 - „Oficjalne obrazy”: `apache/tika` nie jest Docker Official Image. Alpine odpada przy `onnxruntime` (glibc).
 - JWT: zalecana faktyczna walidacja tokenu, nie sam parametr.
+
+## Uwaga zespołu do rekomendacji GUI (UZP)
+
+Rekomendacja Fable „GUI na końcu, najwyżej 10 pkt” pozostaje bez zmian jako jego opinia. Źródła organizatora UZP wymieniają jednak GUI jako punktowane w trzech miejscach: README „Interfejs wykonawczy”, kryteria finału „1-10 Inne ciekawe funkcje dodane do aplikacji (np. GUI)” i FAQ 12b („Preferowany jest widok obok siebie”). Szczególnie premiowana jest też „transparentność procesu ekstrakcji danych”. Wniosek zespołu: prosty ekran PDF|JSON wcześnie, dopracowanie po osiągnięciu stabilnego F1. Zob. [proponowany stos](../04-architektura/proponowany-stos.md).

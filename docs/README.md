@@ -1,12 +1,12 @@
 ---
-wersja: 0.2.0
+wersja: 0.3.0
 aktualizacja: 2026-11-21
 status: dokumentacja przygotowawcza
 ---
 
 # Dokumentacja
 
-Wersja: 0.2.0. Organizacja docelowa: `HackNation2026-dev`.
+Wersja: 0.3.0. Organizacja docelowa: `HackNation2026-dev`.
 
 | Obszar | Zawartość |
 |---|---|
@@ -20,3 +20,7 @@ Wersja: 0.2.0. Organizacja docelowa: `HackNation2026-dev`.
 | [07 — Decyzje](07-decyzje/README.md) | decyzje, konflikty i pytania do mentorów |
 
 Nazwy plików źródłowych zachowano. Większe zestawy znajdziesz przez rejestr materiałów, nie przez ręczne przeglądanie całego repo.
+
+## Historia
+
+Do wersji 0.1.1 ten plik podawał: „Wersja: 0.1.0. Organizacja docelowa: `HackNation2026ORG`.” Organizację docelową zmieniono na `HackNation2026-dev` zgodnie z poleceniem użytkownika.

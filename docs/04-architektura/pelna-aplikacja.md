@@ -1,5 +1,5 @@
 ---
-wersja: 0.2.0
+wersja: 0.3.0
 aktualizacja: 2026-11-21
 status: propozycja autora; wynik konsultacji Fable w docs/07-decyzje/konsultacja-fable.md
 ---
@@ -40,3 +40,7 @@ Konsultacja nie została uruchomiona: bieżący wątek poboczny nie pozwala na d
 - Wymagania: [dokumentacja zadania](../03-wymagania/README.md) i oryginały organizatora.
 - React: https://react.dev/learn — komponenty i obsługa interfejsu.
 - egui: https://github.com/emilk/egui — web/native, eframe i dostępność; odczyt 2026-11-21.
+
+## Historia statusu
+
+Status nagłówka do wersji 0.1.1: „propozycja autora; konsultacja Fable niewykonana”. Zmieniony w kolejnej wersji po wykonaniu konsultacji. Proponowany stos po konsultacji: [proponowany-stos.md](proponowany-stos.md).

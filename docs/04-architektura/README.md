@@ -1,5 +1,5 @@
 ---
-wersja: 0.1.1
+wersja: 0.3.0
 aktualizacja: 2026-11-21
 status: dokumentacja przygotowawcza
 ---
@@ -28,3 +28,7 @@ Nie wymagamy dodatkowej bazy ani kolejki na etapie prototypu. Pliki użytkownik�
 Przed wyborem narzędzi do PDF i konwersji DOC sprawdź licencje komponentów i zależności. Popularność biblioteki nie potwierdza zgodności z wykluczeniem copyleft. Nie wskazano jeszcze zatwierdzonego zestawu bibliotek.
 
 Zobacz [pełną aplikację i wybór interfejsu](pelna-aplikacja.md).
+
+## Proponowany stos
+
+[Proponowany stos](proponowany-stos.md) — status: PROPONOWANY, nie decyzja zespołu. Wersja 0.3.0.

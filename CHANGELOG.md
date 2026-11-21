@@ -1,5 +1,13 @@
 # Historia zmian
 
+## 0.3.0 — 2026-11-21
+
+- Odnotowano zmianę widoczności repo na publiczną przez użytkownika; skrypt publikacji prywatnej nie jest używany dla tego wydania.
+- Dodano `docs/04-architektura/proponowany-stos.md` ze statusem PROPONOWANY (nie decyzja): Python 3.14 + FastAPI, Tika + Tesseract, kompilator JSON COI, llama.cpp, React/TS, Docker Compose.
+- Uzupełniono ADR-001, architekturę i konsultację Fable o odnośniki i uwagę dotyczącą GUI.
+- Przywrócono jako sekcje historyczne treść nadpisaną w 0.2.0 (status publikacji, status konsultacji, dawną organizację).
+- Zmiany wyłącznie addytywne; materiały organizatora bez zmian.
+
 ## 0.2.0 — 2026-11-21
 
 - Opublikowano prywatne repo `HackNation2026-dev/formularze` (organizację utworzył użytkownik ręcznie); potwierdzono prywatność, SHA i drzewo.
