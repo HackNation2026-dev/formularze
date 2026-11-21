@@ -1,0 +1,31 @@
+strony 1-5 4059
+strony 6-9 4309
+strony 10-13 3897
+strony 14-16 2622
+[{'schema': 'LlmChunk', 'seconds': 2.6, 'prompt_tokens': 2588, 'completion_tokens': 109, 'finish': 'stop'}]
+{
+ "sections": [
+  {
+   "page_title": "Rodzaje wniosków",
+   "title": "Rodzaje wniosków",
+   "description": "",
+   "repeating": false,
+   "visible_when": null,
+   "fields": [
+    {
+     "label": "Wybierz rodzaj wniosku",
+     "kind": "RADIO",
+     "options": [
+      "Wniosek o przyznanie stypendium sportowego Rady Miasta Zgierza",
+      "Wniosek o przyznanie nagrody sportowej Rady Miasta Zgierza",
+      "Wniosek o przyznanie wyróżnienia sportowego Rady Miasta Zgierza"
+     ],
+     "required": true,
+     "validator": "",
+     "description": "",
+     "visible_when": null
+    }
+   ]
+  }
+ ]
+}
