@@ -3,12 +3,12 @@ Name: cyfryzacja-formularzy
 Version: 0.1.0
 Summary: HackNation 2026 / COI: AI service converting paper form files into e-form JSON configuration
 Requires-Python: >=3.14
+License-File: LICENSE-NOTICE.md
 Requires-Dist: fastapi
 Requires-Dist: uvicorn[standard]
 Requires-Dist: python-multipart
 Requires-Dist: pydantic
 Requires-Dist: pydantic-settings
-Requires-Dist: python-magic
 Requires-Dist: pdfplumber
 Requires-Dist: pypdf
 Requires-Dist: python-docx
@@ -17,7 +17,14 @@ Requires-Dist: odfpy
 Requires-Dist: pytesseract
 Requires-Dist: pillow
 Requires-Dist: pyjwt
+Requires-Dist: httpx
+Requires-Dist: jsonata-python
+Requires-Dist: rapidfuzz
+Requires-Dist: magika
+Requires-Dist: python-magic
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: httpx; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Dynamic: license-file

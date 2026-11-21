@@ -26,6 +26,7 @@ POMIŃ (są obsługiwane automatycznie przez szablon):
 - dane wnioskodawcy: imię, nazwisko, PESEL, NIP, nazwa firmy, adres zamieszkania/siedziby/korespondencyjny, dane pełnomocnika, dane reprezentanta
 - dane kontaktowe (telefon, e-mail), zgody RODO, oświadczenia o prawdziwości danych, klauzule informacyjne
 - nazwę i adres urzędu, miejscowość i datę, podpis, podstawę prawną, pouczenia, instrukcję wypełniania, numery stron, załącznik nr
+Pomijasz tylko te pola, nie całe sekcje: pozostałe pola sekcji z danymi osoby (np. lista kratek pod jej danymi) wyodrębnij. Przejrzyj cały fragment do końca.
 Jeżeli po pominięciu nie zostaje nic, zwróć pustą listę sections.
 
 ZASADY:
@@ -34,6 +35,7 @@ ZASADY:
 - label: etykieta pola w prostym, uprzejmym języku, bez numerów pozycji ("3. PESEL" -> "PESEL"), bez skrótów.
 - kind: TEXT_FIELD (krótki tekst), TEXTAREA (opis, uzasadnienie), NUMBER (kwota, liczba, powierzchnia), DATEPICKER (data), RADIO (jedna opcja z kratek), CHECKBOX (wiele opcji), SELECT (lista > 5 opcji), FILE_UPLOADER (załącznik, dokument do dołączenia), TEXT_BLOCK (informacja dla użytkownika, bez wpisywania).
 - options: dla RADIO/CHECKBOX/SELECT dokładne nazwy opcji z formularza (bez numerów i kratek).
+- Lista kratek '☐' pod jednym nagłówkiem to JEDNO pole, a options to WSZYSTKIE jej pozycje w kolejności, choćby było ich kilkadziesiąt. Polecenie w liczbie mnogiej ("wskaż rodzaje", "wybierz ... z listy") lub brak ograniczenia do jednej kratki oznacza CHECKBOX, także dla długiej listy. Pozycja bez kratki z miejscem do wpisania (np. "Inny ____") to osobne pole TEXT_FIELD, nie opcja.
 - Lista wariantów po zdaniu typu "proszę:", "wybierz", "zaznacz" (np. "1) zaliczyć ... 2) zwrócić ...") to JEDNO pole RADIO z opcjami, nie osobne pola tekstowe. Pole do wpisania przy wariancie (np. "z tytułu ____") to osobne pole z visible_when na tę opcję.
 - required: false tylko, gdy formularz mówi "opcjonalnie", "jeżeli dotyczy", "nieobowiązkowe".
 - validator: EMAIL, PESEL, NIP, REGON, ZIP_CODE (kod pocztowy), EPUAP, ADE, SERIAL_NUMBER_ID_CARD lub "".

@@ -3,7 +3,6 @@ uvicorn[standard]
 python-multipart
 pydantic
 pydantic-settings
-python-magic
 pdfplumber
 pypdf
 python-docx
@@ -12,8 +11,14 @@ odfpy
 pytesseract
 pillow
 pyjwt
+httpx
+jsonata-python
+rapidfuzz
+magika
+python-magic
 
 [dev]
 pytest
 httpx
 ruff
+pytest-cov
