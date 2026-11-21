@@ -35,3 +35,9 @@ models:         ## download the LLM weights (2.7 GB, Apache-2.0) into ./models
 
 docker:
 	docker compose build
+
+eval-warm:      ## quality smoke (01, 04, 05, 09) from cached model answers, ~10 s, no GPU calls
+	scripts/eval_fast.sh
+
+eval-full:      ## all 9 forms, cold (real model via LLM_BASE_URL); once before a commit
+	scripts/eval_fast.sh --full
