@@ -1,5 +1,13 @@
 # Historia zmian
 
+## 0.4.0 — 2026-11-21
+
+- Dodano aplikację (`src/formgen`): REST API FastAPI z pełną walidacją uploadu (nazwa, rozszerzenie, rozmiar, MIME przez magika, JWT), model `FormDefinition` zgodny z JSON-ami referencyjnymi COI, walidator reguł technicznych i lint JSONata, deterministyczny kompilator szablonów (strona Dane, kontakt, FINISH, adresy, zależności), parsery PDF/DOCX/XLSX/ODS/DOC/obrazów, ekstraktor LLM (llama.cpp, gramatyka JSON) i ekstraktor heurystyczny jako fallback.
+- Dodano Dockerfile (python:3.14.4-slim-trixie, non-root), compose z sidecarami llama.cpp i Apache Tika, Makefile, skrypty `run_e2e.py`, `batch.py`, `sync_materials.py`, `make_token.py`.
+- Dodano 82 testy: round-trip obu JSON-ów referencyjnych, reguły, kompilator vs golden (F1 0.97), API, ingest, ekstrakcja.
+- Dodano wygenerowane JSON-y dla 7 formularzy do oceny (`data/output/`) oraz dokumentację implementacji (`docs/08-implementacja/`): PROBLEM, SPEC, analiza materiałów, research (LLM, OCR, prior art, Generator Formularzy, gdzie uruchomić), pomiary, licencje zależności, mapowanie boardu Miro.
+- Materiały organizatora bez zmian; `data/input/` to kopie robocze poza Git.
+
 ## 0.3.0 — 2026-11-21
 
 - Odnotowano zmianę widoczności repo na publiczną przez użytkownika; skrypt publikacji prywatnej nie jest używany dla tego wydania.

@@ -10,3 +10,12 @@ target/
 /output/
 *.part
 .DS_Store
+
+# pipeline working data: copies of organiser originals made by scripts/sync_materials.py (never committed)
+data/input/*
+!data/input/README.md
+models/*.gguf
+models/.cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

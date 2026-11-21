@@ -1,0 +1,51 @@
+[project]
+name = "cyfryzacja-formularzy"
+version = "0.1.0"
+description = "HackNation 2026 / COI: AI service converting paper form files into e-form JSON configuration"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "pydantic",
+    "pydantic-settings",
+    "pdfplumber",
+    "pypdf",
+    "python-docx",
+    "openpyxl",
+    "odfpy",
+    "pytesseract",
+    "pillow",
+    "pyjwt",
+    "httpx",
+    "jsonata-python",
+    "rapidfuzz",
+    "magika",
+    "python-magic",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx", "ruff", "pytest-cov"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = ["scripts/verify_docs.py", "scripts/publish_private.py", "scripts/material_manifest.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008", "E501", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
