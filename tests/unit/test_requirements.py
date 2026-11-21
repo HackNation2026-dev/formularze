@@ -5,7 +5,6 @@ Regression guard: httpx was a dev-only dependency, so the container failed with 
 
 import ast
 import sys
-from pathlib import Path
 
 from tests.conftest import ROOT
 
