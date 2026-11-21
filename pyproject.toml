@@ -17,6 +17,7 @@ dependencies = [
     "pytesseract",
     "pillow",
     "pyjwt",
+    "httpx",
     "jsonata-python",
     "rapidfuzz",
     "magika",
