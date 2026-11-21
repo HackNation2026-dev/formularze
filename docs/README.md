@@ -1,12 +1,12 @@
 ---
-wersja: 0.3.0
-aktualizacja: 2026-11-21
+wersja: 0.4.0
+aktualizacja: 2026-11-22
 status: dokumentacja przygotowawcza
 ---
 
 # Dokumentacja
 
-Wersja: 0.3.0. Organizacja docelowa: `HackNation2026-dev`.
+Wersja: 0.4.0. Organizacja docelowa: `HackNation2026-dev`.
 
 | Obszar | Zawartość |
 |---|---|
@@ -18,6 +18,7 @@ Wersja: 0.3.0. Organizacja docelowa: `HackNation2026-dev`.
 | [05 — Weryfikacja](05-weryfikacja/README.md) | plan testów i stan wykonania |
 | [06 — Prezentacja](06-prezentacja/README.md) | demo, slajdy i zgłoszenie |
 | [07 — Decyzje](07-decyzje/README.md) | decyzje, konflikty i pytania do mentorów |
+| [08 — Implementacja](08-implementacja/PROBLEM.md) | problem, kontrakt API, architektura, research i pomiary, ewaluacja, ustawienie na obronę, plan zespołu |
 
 Nazwy plików źródłowych zachowano. Większe zestawy znajdziesz przez rejestr materiałów, nie przez ręczne przeglądanie całego repo.
 
