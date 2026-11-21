@@ -287,3 +287,15 @@ def test_llm_address_like_labels_get_dictionaries():
     spec = to_spec(g, secs, "Miejscowość ____ Gmina ____", with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [(f.kind, f.dictionary) for f in fields] == [("SELECT", "Miejscowość"), ("SELECT", "Gmina")]
+
+
+def test_section_prompt_has_cacheable_prefix():
+    """On CPU llama.cpp reuses the KV cache only for an identical prefix: chunk-specific text must come last."""
+    from formgen.extract.prompts import SECTIONS_USER
+
+    a = SECTIONS_USER.format(pages="strony 1-2", text="AAA")
+    b = SECTIONS_USER.format(pages="strony 3-4", text="BBB")
+    i = 0
+    while i < min(len(a), len(b)) and a[i] == b[i]:
+        i += 1
+    assert i > len(a) - 60, "chunk-specific content must sit at the very end of the prompt"

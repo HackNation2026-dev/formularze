@@ -18,7 +18,7 @@ Ustal:
 TEKST FORMULARZA:
 {text}"""
 
-SECTIONS_USER = """Poniżej fragment tekstu papierowego formularza ({pages}). Nagłówki jako '## ', pola do wpisania jako '____', kratki wyboru jako '☐', tabele w [tabela].
+SECTIONS_USER = """Poniżej fragment tekstu papierowego formularza. Nagłówki jako '## ', pola do wpisania jako '____', kratki wyboru jako '☐', tabele w [tabela].
 
 Wyodrębnij WYŁĄCZNIE pola dotyczące PRZEDMIOTU SPRAWY, pogrupowane w sekcje tematyczne i strony.
 
@@ -69,5 +69,5 @@ Poprawne pola (dwie listy CHECKBOX i osobne pole tekstowe):
   {{"label": "Inny język", "kind": "TEXT_FIELD", "required": false}}
 Lista załączników ("w załączeniu: 1) korekta deklaracji 2) ____") to osobne pola FILE_UPLOADER, po jednym na wymieniony dokument ("Plik korekty deklaracji"); nigdy RADIO. Puste pozycje "____" pomijaj.
 
-TEKST:
+TEKST ({pages}):
 {text}"""
