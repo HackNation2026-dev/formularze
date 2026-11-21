@@ -4,16 +4,29 @@ from __future__ import annotations
 
 from formgen.ingest.model import Document, Line, Page, Table
 
+MIN_PAGE_CHARS = 50
+
+
+def _text_chars(page: Page) -> int:
+    texts = [ln.text for ln in page.lines] + [c for t in page.tables for r in t.rows for c in r]
+    return sum(len(t.replace(" ", "")) for t in texts)
+
 
 def load(data: bytes, kind: str, *, tika_url: str | None = None, ocr_lang: str = "pol") -> Document:
     if kind == "pdf":
         from formgen.ingest.pdf import parse_pdf
 
         doc = parse_pdf(data)
-        if sum(len(p.lines) for p in doc.pages) < 3:  # scanned PDF without text layer -> rasterise + OCR
-            from formgen.ingest.pdf_raster import parse_scanned_pdf
+        # pages without a usable text layer (scans, also inside an otherwise digital PDF) -> rasterise + OCR
+        scanned = [i for i, p in enumerate(doc.pages) if _text_chars(p) < MIN_PAGE_CHARS]
+        if scanned:
+            from formgen.ingest.pdf_raster import ocr_pdf_pages
 
-            return parse_scanned_pdf(data, ocr_lang)
+            for i, page in zip(
+                scanned, ocr_pdf_pages(data, [doc.pages[i].number for i in scanned], ocr_lang), strict=True
+            ):
+                doc.pages[i] = page
+            doc.ocr = True
         return doc
     if kind == "docx":
         from formgen.ingest.office import parse_docx

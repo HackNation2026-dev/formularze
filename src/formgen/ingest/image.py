@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from itertools import pairwise
 
 import pytesseract
 from PIL import Image
@@ -13,13 +14,24 @@ A4_RATIO = 1.4142
 MAX_PIXELS = 200_000_000
 
 
+def _blank_row_near(gray: Image.Image, target: int, window: int) -> int:
+    """Row in target +- window with the fewest dark pixels (a gap between text lines); nearest wins ties."""
+    top, bottom = max(0, target - window), min(gray.height, target + window + 1)
+    col = gray.crop((0, top, gray.width, bottom)).resize((1, bottom - top), Image.BOX)
+    means = [col.getpixel((0, y)) for y in range(col.height)]
+    best = max(means)
+    return min((y for y, m in enumerate(means, start=top) if m >= best - 1), key=lambda y: abs(y - target))
+
+
 def split_pages(im: Image.Image) -> list[Image.Image]:
     w, h = im.size
     n = max(1, round(h / (w * A4_RATIO)))
     if n == 1:
         return [im]
     step = h / n
-    return [im.crop((0, int(i * step), w, int((i + 1) * step))) for i in range(n)]
+    gray = im.convert("L")
+    cuts = [0, *(_blank_row_near(gray, int(i * step), int(step * 0.1)) for i in range(1, n)), h]
+    return [im.crop((0, a, w, b)) for a, b in pairwise(cuts)]
 
 
 def parse_image(data: bytes, lang: str = "pol") -> Document:
