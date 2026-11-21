@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     allowed_extensions: str = "pdf,doc,docx,ods,xlsx,jpg,jpeg,png"
     max_filename_length: int = 250
     forbidden_filename_chars: str = ";:<>/\\|'*%$"
-    request_timeout_seconds: int = 1800
+    request_timeout_seconds: int = 1800  # per file, also inside a batch
+    max_batch_files: int = Field(default=20, ge=1)
 
     # auth
     auth_enabled: bool = True

@@ -101,7 +101,8 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
-| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | |
+| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | limit czasu na jeden plik (504 po przekroczeniu) |
+| `MAX_BATCH_FILES` | 20 | maksymalna liczba plików w `analyze-batch` (413 powyżej) |
 
 ## REST API
 
@@ -110,9 +111,10 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 | Metoda i ścieżka | Auth | Opis |
 |---|---|---|
 | `POST /api/v1/forms/analyze` | Bearer | `multipart/form-data`, pole `file` (jeden plik). 200: JSON `FormDefinition`. Nagłówki: `X-Processing-Time-Ms`, `X-Detected-Type`, `X-Warnings` |
+| `POST /api/v1/forms/analyze-batch` | Bearer | `multipart/form-data`, pole `files` powtórzone (do `MAX_BATCH_FILES`). Pliki po kolei, każdy z własnym `REQUEST_TIMEOUT_SECONDS`. 200: `{"results": [{"filename", "status", "form" \| "error", "processing_time_ms", "extractor", ...}], "ok", "failed"}`; błąd jednego pliku nie przerywa paczki |
 | `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
-| `GET /health`, `GET /ready` | – | liveness / readiness |
+| `GET /health`, `GET /ready` | – | liveness / readiness (`/ready` pyta LLM: `degraded` gdy działa tylko fallback heurystyczny, 503 gdy fallback wyłączony) |
 | `GET /review/` | – (wywołania API z UI używają tokena Bearer) | interfejs przeglądu i symulacji |
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),

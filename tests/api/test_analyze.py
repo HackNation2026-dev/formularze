@@ -231,3 +231,40 @@ def test_ready_reports_unreachable_llm():
 def test_ready_without_llm_extractor_is_ok():
     r = TestClient(create_app(Settings(auth_enabled=False, extractor="heuristic", _env_file=None))).get("/ready")
     assert r.status_code == 200 and r.json()["status"] == "ok"
+
+
+def _batch(client, auth, files: list[tuple[str, bytes]]):
+    return client.post(
+        "/api/v1/forms/analyze-batch", files=[("files", (n, io.BytesIO(d))) for n, d in files], headers=auth
+    )
+
+
+def test_batch_returns_one_result_per_file_in_order(client, auth):
+    pdfs = [p for p in SAMPLE_FILES if p.suffix.lower() == ".pdf"][:2]
+    files = [(pdfs[0].name, pdfs[0].read_bytes()), ("notatka.txt", b"hello"), (pdfs[1].name, pdfs[1].read_bytes())]
+    r = _batch(client, auth, files)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert [x["filename"] for x in body["results"]] == [n for n, _ in files]
+    assert [x["status"] for x in body["results"]] == [200, 415, 200]
+    assert body["results"][1]["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
+    for ok in (body["results"][0], body["results"][2]):
+        form = FormDefinition.from_json_dict(ok["form"])
+        assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
+        assert ok["processing_time_ms"] >= 0 and ok["extractor"]
+    assert (body["ok"], body["failed"]) == (2, 1)
+
+
+def test_batch_requires_token(client):
+    assert _batch(client, {}, [("a.pdf", b"%PDF-1.4")]).status_code == 401
+
+
+def test_batch_without_files(client, auth):
+    r = client.post("/api/v1/forms/analyze-batch", headers=auth, data={"x": "1"})
+    assert r.status_code == 400 and r.json()["error"]["code"] == "MISSING_FILE"
+
+
+def test_batch_file_count_limit(settings, auth):
+    c = TestClient(create_app(settings.model_copy(update={"max_batch_files": 2})))
+    r = _batch(c, auth, [(f"{i}.pdf", b"%PDF-1.4") for i in range(3)])
+    assert r.status_code == 413 and r.json()["error"]["code"] == "TOO_MANY_FILES"
