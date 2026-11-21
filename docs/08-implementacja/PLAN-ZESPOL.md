@@ -26,6 +26,11 @@ Dev bez modelu: `AUTH_ENABLED=false EXTRACTOR=heuristic make run`.
 Definicja ukończenia: jury wrzuca PDF, widzi formularz, klika „Innej osoby” i pojawia się sekcja pełnomocnictwa.
 
 ## Strumień B. Jakość ekstrakcji (1 osoba, kompletność + oryginalność)
+Pętla ewaluacji (zasady zespołu z 22.11):
+- zmiana w post-processingu (`to_spec`, `assemble.py`, walidacja): tylko `make eval-warm` (cache odpowiedzi modelu, ~10 s, zero wywołań GPU; chybienie w cache = ERROR);
+- zmiana promptu: `scripts/eval_fast.sh --cold` raz, potem znów ciepło;
+- smoke = formularze 05, 09, 04, 01; 08 nigdy w smoke; `make eval-full` (9 formularzy, zimno) tylko przed commitem;
+- wspólny cache: `~/.cache/formgen-eval` (zmienna `EVAL_CACHE`); SCORE bazowy na smoke (develop, 22.11): 0,7363.
 1. Otwórz 7 plików `data/output/*.json` w wizualizacji (lub `scripts/run_e2e.py` z `--out`). Spisz powtarzalne błędy modelu: duplikaty, TEXT zamiast RADIO, zły podział na strony.
 2. Poprawki w `src/formgen/extract/prompts.py` i `extractor.py`. Po każdej: `make e2e` (golden 05) i `make batch` na Legionie (`LLM_BASE_URL=http://100.111.226.49:18081`).
 3. Miara: `compare()` w `src/formgen/eval/metric.py`; nie schodzić poniżej composite 0,90 na goldenach.
