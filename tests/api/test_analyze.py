@@ -47,6 +47,12 @@ def test_health(client):
     assert client.get("/health").json()["status"] == "ok"
 
 
+def test_review_ui_is_served_without_token(client):
+    r = client.get("/review/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+
+
 def test_requires_token(client):
     r = client.post("/api/v1/forms/analyze", files={"file": ("a.pdf", b"%PDF-1.4", "application/pdf")})
     assert r.status_code == 401 and r.json()["error"]["code"] == "UNAUTHORIZED"

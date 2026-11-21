@@ -1,0 +1,74 @@
+{
+  "title": "Kontrola zależności między stronami",
+  "tabs": [
+    {
+      "id": "p1",
+      "title": "Pierwsza",
+      "type": "MAIN",
+      "questions": [
+        {
+          "field": {
+            "id": "wybor",
+            "type": "RADIO",
+            "title": "Wybór na pierwszej stronie",
+            "techName": "wybor",
+            "options": [
+              {
+                "id": "Tak",
+                "name": "Tak"
+              },
+              {
+                "id": "Nie",
+                "name": "Nie"
+              }
+            ],
+            "states": [],
+            "repeatingSectionGrid": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Druga",
+      "type": "FINISH",
+      "questions": [
+        {
+          "field": {
+            "id": "zalezne",
+            "type": "TEXT_FIELD",
+            "title": "Pole na drugiej stronie",
+            "techName": "zalezne",
+            "options": [],
+            "states": [
+              {
+                "type": "SHOW",
+                "query": "\"Tak\" in tabs[title=\"Pierwsza\"].questions[field.techName=\"wybor\"].field.__userAnswer"
+              }
+            ],
+            "repeatingSectionGrid": []
+          }
+        },
+        {
+          "field": {
+            "id": "blokada",
+            "type": "TEXT_FIELD",
+            "title": "Pole blokowane",
+            "techName": "blokada",
+            "options": [],
+            "states": [
+              {
+                "type": "READ_ONLY",
+                "query": "\"Tak\" in tabs[title=\"Pierwsza\"].questions[field.techName=\"wybor\"].field.__userAnswer"
+              }
+            ],
+            "repeatingSectionGrid": []
+          }
+        }
+      ]
+    }
+  ],
+  "flow": {
+    "links": []
+  }
+}

@@ -1,5 +1,10 @@
 # Historia zmian
 
+## Niewydane
+
+- Dodano interfejs przeglądu `/review/` (pkt 3.3 IV i V): podgląd PDF obok wszystkich pól, symulacja warunków JSONata w izolowanym workerze, uwagi i zgłoszenia braków, eksport czystego JSON i osobnego raportu. 13 testów Playwright.
+- Dockerfile ma etap `node:22.23.1-alpine3.24`, który buduje przypięte zasoby UI. `pyproject.toml` pakuje UI, `verify_docs.py` pomija `node_modules`.
+
 ## 0.4.0 — 2026-11-21
 
 - Dodano aplikację (`src/formgen`): REST API FastAPI z pełną walidacją uploadu (nazwa, rozszerzenie, rozmiar, MIME przez magika, JWT), model `FormDefinition` zgodny z JSON-ami referencyjnymi COI, walidator reguł technicznych i lint JSONata, deterministyczny kompilator szablonów (strona Dane, kontakt, FINISH, adresy, zależności), parsery PDF/DOCX/XLSX/ODS/DOC/obrazów, ekstraktor LLM (llama.cpp, gramatyka JSON) i ekstraktor heurystyczny jako fallback.

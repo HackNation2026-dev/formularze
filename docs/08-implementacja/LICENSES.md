@@ -32,6 +32,10 @@ Stan 2026-11-21. Źródło: metadane PyPI / repozytoria. Aktualizować przy każ
 | Qwen3.5-4B (wagi) | – | Apache-2.0 | model ekstrakcji |
 | Apache Tika (sidecar) | 3.3.0 | Apache-2.0 | konwersja .doc |
 | Unlimited-OCR (opcjonalny sidecar GPU) | v1 | MIT | OCR z układem |
+| PDF.js (pdfjs-dist, UI) | 5.4.394 | Apache-2.0 | podgląd PDF w `/review/` |
+| JSONata (JS, UI) | 2.2.2 | MIT | warunki SHOW/READ_ONLY w symulacji |
+| Playwright (tylko dev) | 1.56.1 | Apache-2.0 | testy UI |
+| Prettier (tylko dev) | 3.6.2 | MIT | format UI |
 
 Wykluczone świadomie: PyMuPDF (AGPL), Ghostscript (AGPL), MinerU (AGPL), marker/surya (GPL), Ultralytics YOLO (AGPL),
 LayoutLMv3 (CC-BY-NC), antiword/catdoc (GPL), LibreOffice (MPL, tylko jako ewentualny fallback .doc po zgodzie mentora).

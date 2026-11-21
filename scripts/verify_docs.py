@@ -27,7 +27,7 @@ if lock.exists():
 count=0
 for p in root.rglob('*.md'):
  rel=p.relative_to(root)
- if '.git' in rel.parts or 'zrodla' in rel.parts or any(s.startswith('organizator') for s in rel.parts):continue
+ if '.git' in rel.parts or 'node_modules' in rel.parts or 'zrodla' in rel.parts or any(s.startswith('organizator') for s in rel.parts):continue
  count+=1;s=p.read_text()
  for link in re.findall(r'(?<!!)\[[^\]]*\]\((<[^>]+>|[^)\n]+)\)',s):
   link=link.strip().split(' "')[0].strip('<>');link=unquote(link.split('#',1)[0])
