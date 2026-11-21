@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+src/cyfryzacja_formularzy.egg-info/PKG-INFO
+src/cyfryzacja_formularzy.egg-info/SOURCES.txt
+src/cyfryzacja_formularzy.egg-info/dependency_links.txt
+src/cyfryzacja_formularzy.egg-info/requires.txt
+src/cyfryzacja_formularzy.egg-info/top_level.txt
