@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""  # runtime secret, never baked into the image
     llm_fallback_base_url: str | None = None
     llm_fallback_model: str | None = None
+    llm_cache_dir: str = ""  # evaluation only: cache model answers on disk (never set in production)
     # one chunk on a CPU-only box can take minutes; after this the heuristic extractor takes over
     llm_timeout_seconds: int = 600
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited

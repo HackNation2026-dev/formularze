@@ -9,10 +9,13 @@ Two deployments are supported with the same code, per the mentor's ruling (Disco
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import os
 import re
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -37,8 +40,12 @@ class LlmClient:
         temperature: float = 0.0,
         api_key: str = "",
         transport: httpx.BaseTransport | None = None,
+        cache_dir: str | os.PathLike[str] | None = None,
     ):
         self.base_url = base_url.rstrip("/")
+        # optional response cache for evaluation loops: identical prompt+schema+model -> identical answer, no model call
+        self.cache_dir = Path(cache_dir) if cache_dir else None
+        self.cache_hits = 0
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
@@ -84,7 +91,22 @@ class LlmClient:
         except httpx.TimeoutException as exc:
             raise TimeoutError(f"LLM call exceeded {self.timeout}s") from exc
 
+    def _cache_path(self, system: str, user: str, out: type[BaseModel], max_tokens: int) -> Path | None:
+        if self.cache_dir is None:
+            return None
+        key = json.dumps(
+            [self.model, self.temperature, max_tokens, out.__name__, json_schema(out), system, user],
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        return self.cache_dir / f"{hashlib.sha256(key.encode()).hexdigest()}.json"
+
     def complete[T: BaseModel](self, system: str, user: str, out: type[T], max_tokens: int = 4096) -> T:
+        cache = self._cache_path(system, user, out, max_tokens)
+        if cache is not None and cache.exists():
+            self.cache_hits += 1
+            self.calls.append({"schema": out.__name__, "seconds": 0.0, "cached": True, "endpoint": self.base_url})
+            return out.model_validate(json.loads(cache.read_text(encoding="utf-8")))
         t0 = time.perf_counter()
         r = self._post(self._body(system, user, out, max_tokens, self._portable))
         if r.status_code == 400 and not self._portable:
@@ -121,9 +143,13 @@ class LlmClient:
             finish,
         )
         try:
-            return out.model_validate(json.loads(content))
+            parsed = out.model_validate(json.loads(content))
         except (json.JSONDecodeError, ValueError) as exc:
             raise ValueError(f"LLM returned invalid {out.__name__}: {exc}; content={content[:300]}") from exc
+        if cache is not None:  # store only answers that parsed; a truncated one must be retried next time
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(parsed.model_dump_json(), encoding="utf-8")
+        return parsed
 
 
 class ChainedClient:
@@ -157,15 +183,23 @@ class ChainedClient:
 
 
 def make_client(settings: Any) -> LlmClient | ChainedClient:
-    """Primary endpoint from LLM_BASE_URL (+ LLM_API_KEY), optional LLM_FALLBACK_BASE_URL (local llama.cpp)."""
+    """Primary endpoint from LLM_BASE_URL (+ LLM_API_KEY), optional LLM_FALLBACK_BASE_URL (local llama.cpp).
+
+    LLM_CACHE_DIR (evaluation only) caches parsed answers on disk for both endpoints."""
+    cache = getattr(settings, "llm_cache_dir", "") or None
     primary = LlmClient(
-        settings.llm_base_url, settings.llm_model, settings.llm_timeout_seconds, api_key=settings.llm_api_key
+        settings.llm_base_url,
+        settings.llm_model,
+        settings.llm_timeout_seconds,
+        api_key=settings.llm_api_key,
+        cache_dir=cache,
     )
     if settings.llm_fallback_base_url:
         fallback = LlmClient(
             settings.llm_fallback_base_url,
             settings.llm_fallback_model or settings.llm_model,
             settings.llm_timeout_seconds,
+            cache_dir=cache,
         )
         return ChainedClient([primary, fallback])
     return primary
