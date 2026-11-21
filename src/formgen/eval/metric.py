@@ -3,6 +3,9 @@
 Leaf fields are matched per tab by techName (exact) or title (rapidfuzz
 token_set_ratio >= 80). Reports precision/recall/F1 of fields, type accuracy on
 matched fields, section-title accuracy, SHOW-state recall and a composite score.
+The same report is computed separately for template tabs (Dane, Kontakt, Strona
+końcowa: built from fixed templates, so they score high almost for free) and for
+subject-of-application tabs (what the extractor actually has to find).
 """
 
 from __future__ import annotations
@@ -45,6 +48,8 @@ class Report:
     show_total: int = 0
     unmatched_golden: list[str] = field(default_factory=list)
     unmatched_ours: list[str] = field(default_factory=list)
+    subject: Report | None = None
+    template: Report | None = None
 
     @property
     def precision(self) -> float:
@@ -58,6 +63,14 @@ class Report:
     def f1(self) -> float:
         p, r = self.precision, self.recall
         return 2 * p * r / (p + r) if p + r else 0.0
+
+    @property
+    def f1_subject(self) -> float:
+        return self.subject.f1 if self.subject else 0.0
+
+    @property
+    def f1_template(self) -> float:
+        return self.template.f1 if self.template else 0.0
 
     @property
     def type_acc(self) -> float:
@@ -83,7 +96,8 @@ class Report:
     def summary(self) -> str:
         return (
             f"P={self.precision:.2f} R={self.recall:.2f} F1={self.f1:.2f} type={self.type_acc:.2f} "
-            f"section={self.section_acc:.2f} show={self.show_recall:.2f} composite={self.composite():.2f}"
+            f"section={self.section_acc:.2f} show={self.show_recall:.2f} composite={self.composite():.2f} "
+            f"F1_subject={self.f1_subject:.2f} F1_template={self.f1_template:.2f}"
         )
 
 
@@ -110,8 +124,18 @@ def _match(a: Leaf, b: Leaf) -> bool:
 
 
 def compare(ours: FormDefinition, golden: FormDefinition, tabs: set[str] | None = None) -> Report:
-    r = Report()
     g_leaves, o_leaves = leaves(golden, tabs), leaves(ours, tabs)
+    r = _compare(g_leaves, o_leaves)
+    # leaves only ever match within one tab key, so the two parts add up to the overall counts
+    for part, is_template in (("subject", False), ("template", True)):
+        g_part = [lf for lf in g_leaves if (_tab_key(lf.tab) != "*") == is_template]
+        o_part = [lf for lf in o_leaves if (_tab_key(lf.tab) != "*") == is_template]
+        setattr(r, part, _compare(g_part, o_part))
+    return r
+
+
+def _compare(g_leaves: list[Leaf], o_leaves: list[Leaf]) -> Report:
+    r = Report()
     used: set[int] = set()
     for g in g_leaves:
         best = None

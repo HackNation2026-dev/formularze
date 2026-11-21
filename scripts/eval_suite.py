@@ -278,15 +278,19 @@ def score_form(name: str, units: list[Unit]) -> dict:
     }
     if golden_path.exists():
         golden = FormDefinition.from_json_dict(json.loads(golden_path.read_text(encoding="utf-8")))
-        comps = []
+        comps, subj = [], []
         for u in units:
             if u.form_def is None:
                 comps.append(0.0)
+                subj.append(0.0)
                 continue
             r = compare(u.form_def, golden)
             no_err = not any(v.severity == Severity.ERROR for v in check_rules(u.form_def))
             comps.append(r.composite(validator_pass=no_err))
+            subj.append(r.f1_subject)
         row["golden"] = statistics.mean(comps)
+        # informational: F1 on subject tabs only (template tabs score ~1.0 for free); not part of "score"
+        row["golden_f1_subject"] = statistics.mean(subj)
         row["golden_per_fmt"] = {u.fmt: round(c, 3) for u, c in zip(units, comps, strict=True)}
     labels = {u.fmt: [f.title for f in subject_fields(u.form_def)] if u.form_def else [] for u in units}
     pairs = list(combinations(labels, 2))
@@ -353,13 +357,16 @@ def main() -> None:
     rows = [score_form(name, us) for name, us in forms.items()]
     total = statistics.mean(r["score"] for r in rows)
 
-    print(f"\n{'form':34} {'fmts':5} {'golden':>6} {'consist':>7} {'cover':>6} {'noise':>6} {'score':>6}  fields/fmt")
+    print(
+        f"\n{'form':34} {'fmts':5} {'golden':>6} {'g_subj':>6} {'consist':>7} {'cover':>6} {'noise':>6} {'score':>6}  fields/fmt"
+    )
     for r in rows:
         g = f"{r['golden']:.3f}" if "golden" in r else "-"
+        gs = f"{r['golden_f1_subject']:.3f}" if "golden_f1_subject" in r else "-"
         c = f"{r['cover']:.3f}" if "cover" in r else "-"
         flds = " ".join(f"{k}={v}" for k, v in r["fields"].items())
         print(
-            f"{r['form']:34} {r['formats']:5} {g:>6} {r['consist']:7.3f} {c:>6} {r['noise']:6.3f} {r['score']:6.3f}  {flds}"
+            f"{r['form']:34} {r['formats']:5} {g:>6} {gs:>6} {r['consist']:7.3f} {c:>6} {r['noise']:6.3f} {r['score']:6.3f}  {flds}"
         )
     errors = [e for r in rows for e in r["errors"]]
     print(
