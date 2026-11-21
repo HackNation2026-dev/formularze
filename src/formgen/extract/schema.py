@@ -1,0 +1,75 @@
+"""Flat intermediate output of the LLM (constrained decoding target). Kept shallow on purpose:
+small models lose accuracy on deep nested schemas ("constraint tax"), so the nested
+FormDefinition is assembled in code from this."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+Kind = Literal[
+    "TEXT_FIELD", "TEXTAREA", "NUMBER", "DATEPICKER", "RADIO", "CHECKBOX", "SELECT", "FILE_UPLOADER", "TEXT_BLOCK"
+]
+ValidatorName = Literal["", "EMAIL", "PESEL", "NIP", "REGON", "ZIP_CODE", "EPUAP", "ADE", "SERIAL_NUMBER_ID_CARD"]
+
+
+class LlmCondition(BaseModel):
+    field_label: str = ""
+    equals: str = ""
+
+
+class LlmField(BaseModel):
+    label: str
+    kind: Kind = "TEXT_FIELD"
+    options: list[str] = Field(default_factory=list)
+    required: bool = True
+    validator: ValidatorName = ""
+    description: str = ""
+    visible_when: LlmCondition | None = None
+
+
+class LlmSection(BaseModel):
+    page_title: str
+    title: str
+    description: str = ""
+    repeating: bool = False
+    visible_when: LlmCondition | None = None
+    fields: list[LlmField] = Field(default_factory=list)
+
+
+class LlmGlobal(BaseModel):
+    title: str
+    office_name: str = ""
+    office_is_organ: bool = False
+    applicant_self: bool = True
+    applicant_other_person: bool = False
+    applicant_legal_entity: bool = False
+    reasoning: str = ""
+
+
+class LlmChunk(BaseModel):
+    sections: list[LlmSection] = Field(default_factory=list)
+
+
+def json_schema(model: type[BaseModel]) -> dict:
+    """Inline, $ref-free schema (llama.cpp's grammar converter silently drops nested $ref)."""
+    s = model.model_json_schema(ref_template="#/$defs/{model}")
+    defs = s.pop("$defs", {})
+
+    def inline(node, in_properties: bool = False):
+        if isinstance(node, dict):
+            if "$ref" in node:
+                name = node["$ref"].split("/")[-1]
+                return inline(defs[name])
+            out = {}
+            for k, v in node.items():
+                if not in_properties and k in ("title", "default"):
+                    continue  # schema metadata, not a property named "title"
+                out[k] = inline(v, in_properties=(k == "properties"))
+            return out
+        if isinstance(node, list):
+            return [inline(x) for x in node]
+        return node
+
+    return inline(s)

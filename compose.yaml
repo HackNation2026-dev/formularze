@@ -1,0 +1,40 @@
+# docker compose up --build   (R-09, R-14, R-15)
+# Only the API publishes a port. LLM and converter sidecars are reachable on the compose network only.
+services:
+  api:
+    build: .
+    image: cyfryzacja-formularzy/api:0.1.0
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file: .env
+    environment:
+      LLM_BASE_URL: http://llm:8080
+      DOC_CONVERTER_URL: http://tika:9998
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    depends_on:
+      - llm
+      - tika
+    restart: unless-stopped
+
+  llm:
+    # llama.cpp server, CPU build, pinned tag (verified 2026-11-21). Model weights mounted read-only at runtime.
+    image: ghcr.io/ggml-org/llama.cpp:server-b12602
+    user: "65534:65534"
+    command: >
+      --model /models/${LLM_GGUF:-Qwen3.5-4B-Q4_K_M.gguf}
+      --host 0.0.0.0 --port 8080 --ctx-size 16384 --jinja --reasoning-budget 0
+      --threads ${LLM_THREADS:-8} --cache-prompt
+    volumes:
+      - ./models:/models:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  tika:
+    # Apache Tika (Apache-2.0): .doc -> XHTML without any copyleft dependency
+    image: apache/tika:3.3.0.0
+    expose:
+      - "9998"
+    restart: unless-stopped
