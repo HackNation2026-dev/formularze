@@ -11,3 +11,6 @@
 *.jpg binary
 *.jpeg binary
 *.jpe binary
+
+# Oryginały organizatora: bajty bez zmian (manifest ma sumy z CRLF); git nie normalizuje końców linii
+docs/02-materialy/organizator/**/*.json binary
