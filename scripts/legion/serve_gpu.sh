@@ -14,8 +14,8 @@ docker run -d --name llmsrv --restart unless-stopped \
   --device /dev/dxg -v /usr/lib/wsl:/usr/lib/wsl:ro -e LD_LIBRARY_PATH=/usr/lib/wsl/lib:/usr/local/cuda/lib64:/src/build/bin \
   -p 18081:8080 -v "$HOME/ocr-bench:/work" -v "$HOME/llama.cpp:/src" \
   --entrypoint /src/build/bin/llama-server nvidia/cuda:12.6.3-devel-ubuntu24.04 \
-  -m "/work/$MODEL" --host 0.0.0.0 --port 8080 -ngl 99 -c 16384 --jinja --reasoning-budget 0 --temp 0 \
-  --flash-attn on --cache-prompt --no-webui --api-key "$KEY" -np 2 >/dev/null
+  -m "/work/$MODEL" --host 0.0.0.0 --port 8080 -ngl 99 -c 32768 --jinja --reasoning-budget 0 --temp 0 \
+  --flash-attn on --cache-prompt --no-webui --api-key "$KEY" -np 4 >/dev/null
 for i in $(seq 1 120); do curl -sf localhost:18081/health >/dev/null && break; sleep 1; done
 curl -sf localhost:18081/health >/dev/null || { echo "llama-server did not come up"; exit 1; }
 docker run -d --name cfl --restart unless-stopped --network host cloudflare/cloudflared:2025.11.1 \
