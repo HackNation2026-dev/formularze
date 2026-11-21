@@ -20,9 +20,9 @@ RUN pip install -r requirements.txt
 
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install --no-deps -e .
+RUN pip install --no-deps . && rm -rf build src/*.egg-info
 
-# pre-download the magika model so the container works offline (HF_HUB_OFFLINE etc. not needed; magika bundles it)
+# magika ships its ONNX model inside the wheel and Tesseract data comes from apt: nothing is downloaded at runtime
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status==200 else 1)"
