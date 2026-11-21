@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -16,11 +15,39 @@ from formgen import __version__, pipeline
 from formgen.api.errors import ApiError
 from formgen.api.security import require_auth
 from formgen.api.settings import Settings, get_settings
-from formgen.api.upload import validate_upload
+from formgen.api.upload import ValidUpload, validate_upload
 from formgen.extract.llm_client import make_client
 from formgen.schema import FormDefinition, Severity, check_rules, check_sample_values
 
 log = logging.getLogger("formgen")
+
+
+async def _process(up: ValidUpload, st: Settings) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Run the pipeline on one validated upload; returns (FormDefinition JSON, metadata) or raises ApiError."""
+    try:
+        # pipeline.run is blocking (OCR, LLM over HTTP); keep the event loop free for other requests.
+        # On timeout the worker thread is abandoned and finishes in the background.
+        with anyio.fail_after(st.request_timeout_seconds):
+            result = await anyio.to_thread.run_sync(
+                pipeline.run, up.data, up.kind, up.filename, st, abandon_on_cancel=True
+            )
+    except TimeoutError as exc:
+        raise ApiError(
+            504, "PROCESSING_TIMEOUT", str(exc) or f"processing exceeded {st.request_timeout_seconds} s"
+        ) from exc
+    except ConnectionError as exc:
+        raise ApiError(503, "MODEL_UNAVAILABLE", str(exc)) from exc
+    if not result.ok:
+        errors = [str(v) for v in result.violations if v.severity == Severity.ERROR]
+        log.error("pipeline produced invalid form for %s: %s", up.filename, errors)
+        raise ApiError(500, "INVALID_OUTPUT", "generated form failed technical rules", {"errors": errors})
+    return result.form.to_json_dict(), {
+        "processing_time_ms": result.elapsed_ms,
+        "detected_type": up.detected,
+        "detected_score": round(up.score, 3),
+        "warnings": sum(v.severity == Severity.WARNING for v in result.violations),
+        "extractor": str(result.trace.get("extractor", "")),
+    }
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -71,34 +98,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> JSONResponse:
         cl = request.headers.get("content-length")
         up = await validate_upload(file, st, int(cl) if cl and cl.isdigit() else None)
-        # R-08: nothing persisted; any scratch files live in a per-request temp dir
-        with tempfile.TemporaryDirectory(prefix="formgen-") as _tmp:
-            try:
-                # pipeline.run is blocking (OCR, LLM over HTTP); keep the event loop free for other requests.
-                # On timeout the worker thread is abandoned and finishes in the background.
-                with anyio.fail_after(st.request_timeout_seconds):
-                    result = await anyio.to_thread.run_sync(
-                        pipeline.run, up.data, up.kind, up.filename, st, abandon_on_cancel=True
-                    )
-            except TimeoutError as exc:
-                raise ApiError(
-                    504, "PROCESSING_TIMEOUT", str(exc) or f"processing exceeded {st.request_timeout_seconds} s"
-                ) from exc
-            except ConnectionError as exc:
-                raise ApiError(503, "MODEL_UNAVAILABLE", str(exc)) from exc
-        if not result.ok:
-            errors = [str(v) for v in result.violations if v.severity == Severity.ERROR]
-            log.error("pipeline produced invalid form for %s: %s", up.filename, errors)
-            raise ApiError(500, "INVALID_OUTPUT", "generated form failed technical rules", {"errors": errors})
+        form, meta = await _process(up, st)
         return JSONResponse(
-            content=result.form.to_json_dict(),
+            content=form,
             headers={
-                "X-Processing-Time-Ms": str(result.elapsed_ms),
-                "X-Detected-Type": f"{up.detected};score={up.score:.3f}",
-                "X-Warnings": str(sum(v.severity == Severity.WARNING for v in result.violations)),
-                "X-Extractor": str(result.trace.get("extractor", "")),
+                "X-Processing-Time-Ms": str(meta["processing_time_ms"]),
+                "X-Detected-Type": f"{meta['detected_type']};score={meta['detected_score']:.3f}",
+                "X-Warnings": str(meta["warnings"]),
+                "X-Extractor": meta["extractor"],
             },
         )
+
+    @app.post("/api/v1/forms/analyze-batch", tags=["forms"])
+    async def analyze_batch(
+        files: list[UploadFile] | None = File(default=None),
+        st: Settings = Depends(get_settings),
+        _auth: dict | None = Depends(require_auth),
+    ) -> dict[str, Any]:
+        """Several files in one request, processed one after another (each with its own timeout).
+        A failing file does not fail the batch: its entry carries the same error envelope as /analyze."""
+        if not files:
+            raise ApiError(400, "MISSING_FILE", "multipart field 'files' is required")
+        if len(files) > st.max_batch_files:
+            raise ApiError(413, "TOO_MANY_FILES", f"at most {st.max_batch_files} files per batch")
+        results: list[dict[str, Any]] = []
+        for f in files:
+            try:
+                form, meta = await _process(await validate_upload(f, st), st)
+                results.append({"filename": f.filename, "status": 200, "form": form, **meta})
+            except ApiError as exc:
+                results.append({"filename": f.filename, "status": exc.status_code, "error": exc.detail})
+        ok = sum(r["status"] == 200 for r in results)
+        return {"results": results, "ok": ok, "failed": len(results) - ok}
 
     @app.post("/api/v1/forms/validate", tags=["forms"])
     async def validate(body: dict[str, Any], _auth: dict | None = Depends(require_auth)) -> dict[str, Any]:
