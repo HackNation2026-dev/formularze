@@ -1,0 +1,21 @@
+INFO httpx: HTTP Request: GET http://100.111.226.49:18081/health "HTTP/1.1 200 OK"
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmGlobal 3.9s tokens=3309/129 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 3.1s tokens=2588/109 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 2.9s tokens=2581/86 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 47.7s tokens=2464/2048 finish=length
+INFO formgen.extract: chunk strony 10-13 invalid (LLM returned invalid LlmChunk: Expecting property name enclosed in double quotes); retrying as two halves
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 12.5s tokens=1839/456 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 15.2s tokens=1872/570 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 23.8s tokens=2067/999 finish=stop
+INFO formgen.extract: dropped 6 LLM fields: ['noise-section:Dane wnioskodawcy', 'template:Adres siedziby klubu', 'template:Adres korespondencyjny', 'template:Imię trenera', 'template:Nazwisko trenera', 'template:Imię i nazwisko zawodniczki/zawodnika']
+source disciplines (20): ['gimnastyka artystyczna', 'hokej', 'karate', 'kolarstwo', 'koszykówka', 'lekkoatletyka', 'łucznictwo', 'łyżwiarstwo', 'narciarstwo klasyczne', 'piłka nożna', 'piłka ręczna', 'piłka siatkowa', 'piłka wodna', 'sport motocyklowy', 'sporty walki', 'sporty wodne', 'tenis stołowy', 'tenis ziemny', 'unihokej', 'zapasy']
+FAIL
+  0 fields carry the discipline list, expected exactly 1
+  no text field for 'Inna dyscyplina'

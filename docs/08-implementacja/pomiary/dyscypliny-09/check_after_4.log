@@ -1,0 +1,34 @@
+INFO httpx: HTTP Request: GET http://100.111.226.49:18081/health "HTTP/1.1 200 OK"
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmGlobal 3.9s tokens=3309/129 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 45.0s tokens=2987/2048 finish=length
+INFO formgen.extract: chunk strony 1-5 invalid (LLM returned invalid LlmChunk: Expecting property name enclosed in double quotes); retrying as two halves
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 6.0s tokens=2298/188 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 26.2s tokens=2333/1063 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 47.1s tokens=2980/2048 finish=length
+INFO formgen.extract: chunk strony 6-9 invalid (LLM returned invalid LlmChunk: Expecting property name enclosed in double quotes); retrying as two halves
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 25.4s tokens=2312/1127 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 26.9s tokens=2312/1211 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 45.3s tokens=2863/2048 finish=length
+INFO formgen.extract: chunk strony 10-13 invalid (LLM returned invalid LlmChunk: Expecting ',' delimiter: line 244 column 29 (char); retrying as two halves
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 16.5s tokens=2238/306 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 35.0s tokens=2271/1187 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 37.2s tokens=2466/1649 finish=stop
+INFO formgen.extract: dropped 27 LLM fields: ['ungrounded:Miejscowość', 'noise-section:Ochrona danych osobowych', 'template:Dane reprezentanta klubu sportowego', 'template:Imię reprezentanta', 'template:Nazwisko reprezentanta', 'template:Numer telefonu reprezentanta', 'template:Imię pełnomocnika', 'template:Nazwisko pełnomocnika', 'template:Seria i numer dowodu osobistego pełnomocnika', 'template:Numer telefonu pełnomocnika', 'template:Telefon kontaktowy klubu', 'template:Adres siedziby klubu']
+source disciplines (20): ['gimnastyka artystyczna', 'hokej', 'karate', 'kolarstwo', 'koszykówka', 'lekkoatletyka', 'łucznictwo', 'łyżwiarstwo', 'narciarstwo klasyczne', 'piłka nożna', 'piłka ręczna', 'piłka siatkowa', 'piłka wodna', 'sport motocyklowy', 'sporty walki', 'sporty wodne', 'tenis stołowy', 'tenis ziemny', 'unihokej', 'zapasy']
+  SECTION      'Rodzaje i konkretne dyscypliny sportowe' []
+  RADIO        'Rodzaj udziału w dyscyplinach sportowych' ['Zespołowa', 'Indywidualna – inna', 'Indywidualna – lekkoatletyka']
+  CHECKBOX     'Konkretne dyscypliny sportowe' ['Gimnastyka artystyczna', 'Hokej', 'Karate', 'Kolarstwo', 'Koszykówka', 'Lekkoatletyka', 'Łucznictwo', 'Łyżwiarstwo', 'Narciarstwo klasyczne', 'Piłka nożna', 'Piłka ręczna', 'Piłka siatkowa', 'Piłka wodna', 'Sport motocyklowy', 'Sporty walki', 'Sporty wodne', 'Tenis stołowy', 'Tenis ziemny', 'Unihokej', 'Zapasy']
+  TEXT_FIELD   'Inna dyscyplina sportowa' []
+  FILE_UPLOADER 'Do wniosku należy załączyć zaświadczenia wydane przez Polski Związek Sportowy odpowiedni dla danej dyscypliny sportowej lub inne oficjalne dokumenty potwierdzające osiągnięcia sportowe zawodniczek/zawodników' []
+PASS
