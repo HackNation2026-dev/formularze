@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     allowed_extensions: str = "pdf,doc,docx,ods,xlsx,jpg,jpeg,png"
     max_filename_length: int = 250
     forbidden_filename_chars: str = ";:<>/\\|'*%$"
-    request_timeout_seconds: int = 600
+    request_timeout_seconds: int = 1800
 
     # auth
     auth_enabled: bool = True
@@ -37,7 +37,8 @@ class Settings(BaseSettings):
     llm_api_key: str = ""  # runtime secret, never baked into the image
     llm_fallback_base_url: str | None = None
     llm_fallback_model: str | None = None
-    llm_timeout_seconds: int = 300
+    # one chunk on a CPU-only box can take minutes; after this the heuristic extractor takes over
+    llm_timeout_seconds: int = 600
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited
     ocr_base_url: str | None = None
     doc_converter_url: str | None = None  # Apache Tika sidecar for .doc

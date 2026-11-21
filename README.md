@@ -80,13 +80,13 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
 | `ALLOWED_EXTENSIONS` | pdf,doc,docx,ods,xlsx,jpg,jpeg,png | whitelist rozszerzeń (case-insensitive) |
 | `AUTH_ENABLED` | true | wymagaj JWT Bearer |
 | `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_LEEWAY_SECONDS` | –, HS256, –, –, 30 | weryfikacja tokenu |
-| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 300 | lokalny serwer llama.cpp (OpenAI-compatible) |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 600 | serwer zgodny z OpenAI z otwartym modelem: lokalny llama.cpp albo nasza chmura (`LLM_API_KEY`); `LLM_FALLBACK_BASE_URL` = lokalny zapas |
 | `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | tesseract / rapidocr / unlimited (sidecar GPU) |
 | `DOC_CONVERTER_URL` | – | Apache Tika dla `.doc` |
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
-| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 600, INFO | |
+| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | |
 
 ## REST API
 
