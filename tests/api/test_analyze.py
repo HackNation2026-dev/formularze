@@ -113,6 +113,31 @@ def test_validate_endpoint_golden(client, auth, golden_dict):
     assert r.status_code == 200 and r.json()["valid"] is True
 
 
+def test_validate_endpoint_without_sample_values_has_empty_sample_lists(client, auth, golden_dict):
+    body = client.post("/api/v1/forms/validate", json=golden_dict, headers=auth).json()
+    assert body["sample_errors"] == [] and body["sample_unknown"] == []
+
+
+def _fields(node):
+    for q in node.get("questions", []) + node.get("repeatingSectionGrid", []):
+        yield q["field"]
+        yield from _fields(q["field"])
+
+
+def test_validate_endpoint_sample_values(client, auth, golden_dict):
+    field = next(f for tab in golden_dict["tabs"] for f in _fields(tab) if f["type"] == "TEXT_FIELD")
+    field["validation"] = ["PESEL"]
+    body = {**golden_dict, "sample_values": {field["techName"]: "55030101194", "nie_ma_takiego_pola": "x"}}
+    r = client.post("/api/v1/forms/validate", json=body, headers=auth).json()
+    assert r["valid"] is True
+    assert r["sample_errors"] == [{"techName": field["techName"], "value": "55030101194", "failed": ["PESEL"]}]
+    assert r["sample_unknown"] == ["nie_ma_takiego_pola"]
+
+    body["sample_values"] = {field["techName"]: "55030101193"}
+    r = client.post("/api/v1/forms/validate", json=body, headers=auth).json()
+    assert r["sample_errors"] == [] and r["sample_unknown"] == []
+
+
 def test_validate_endpoint_broken(client, auth):
     r = client.post("/api/v1/forms/validate", json={"title": "x", "tabs": [], "flow": {"links": []}}, headers=auth)
     assert r.json()["valid"] is False
