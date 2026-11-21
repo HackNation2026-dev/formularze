@@ -10,7 +10,9 @@ Projekt: [specyfikacja](../superpowers/specs/2026-11-21-makiety-gui-design.md), 
 
 ## Stan i ograniczenia
 
-- Makiety istnieją w sesji FigCraft `formularze-gui` (6 stron). Silnik FigCraft działa w sandboxie bez dostępu do systemu plików repo, więc pliku `design/formularze-gui.figcraft` nie ma w Git. Sesję można otworzyć lokalnie (`collab.host`) i zapisać z aplikacji FigCraft.
+- Makiety istnieją w sesji FigCraft `formularze-gui` (6 stron). Silnik FigCraft działa w sandboxie bez dostępu do systemu plików repo, więc pliku `design/formularze-gui.figcraft` nie ma w Git, a repo nie zawiera zrzutów makiet. Autor sesji udostępnia ją lokalnie (`collab.host`, adres `127.0.0.1:47900`, link z tokenem przekazywany poza repo); po dołączeniu w aplikacji FigCraft plik zapisuje się jako `design/formularze-gui.figcraft`.
+- Opisy ramek poniżej (stany, prototyp, warianty) potwierdził autor na zrzutach z sesji; do czasu zapisania pliku nie da się ich sprawdzić z samego repo. Z repo sprawdzają się tylko tokeny (`tests/test_gui_tokens.py`).
+- `design/tokens.json` zawiera kolekcje `Theme` i `Scale` i powstaje z `design/tokens.css` skryptem `scripts/gui_tokens_from_css.py`. Typografię (Inter, Source Code Pro, style `Text/*`) opisuje ta sekcja, bez pliku; `Lang` jest tylko w FigCraft.
 - Teksty interfejsu (około 125 par PL/EN) są w kolekcji zmiennych `Lang`, bez eksportu do repo. Klucze mają prefiksy: `login/`, `upload/`, `queue/`, `details/`, `val/`, `prev/`, `load/`, `set/`, `st/`, `nav/`, `tab/`, `badge/`, `btn/`, `row/`, `field/`.
 - Dane przykładowe w makietach (nazwy plików, ścieżki walidacji, PESEL, czasy) są statyczne.
 
@@ -48,16 +50,22 @@ Narysowane są ramki dla 413, 415 `UNSUPPORTED_MEDIA_TYPE`, 400 `INVALID_FILENAM
 | `FILE_TOO_LARGE` | 413 | `State/ErrorRows` | nie (zmień plik) |
 | `UNSUPPORTED_MEDIA_TYPE` | 415 | `State/ErrorRows` | nie |
 | `MIME_MISMATCH` | 415 | ten sam wiersz błędu, inny tekst | nie |
-| `INVALID_FILENAME` (nazwa dłuższa niż 250 znaków lub znaki `;:<>/\|'*%$`) | 400 | `State/ErrorRows` | nie |
-| `MISSING_FILE` (brak pola, pusty plik) | 400 | ten sam wiersz błędu | nie |
-| `UNAUTHORIZED` | 401 | `State/Unauthorized401` | po zalogowaniu |
-| `PROCESSING_TIMEOUT` | 504 | `State/Timeout` | tak |
-| `MODEL_UNAVAILABLE` | 503 | wiersz błędu z przyciskiem „Ponów” | tak |
-| `INVALID_OUTPUT` | 500 | wiersz błędu | tak |
+| `INVALID_FILENAME` (nazwa dłuższa niż 250 znaków lub znak ze zbioru `; : < > / \ \| ' * % $`) | 400 | `State/ErrorRows` | nie |
+| `MISSING_FILE` (brak nazwy, brak pola `file`, pusty plik) | 400 | ten sam wiersz błędu | nie |
+| `UNAUTHORIZED` (też w `/validate`) | 401 | `State/Unauthorized401` | po zalogowaniu |
+| `PROCESSING_TIMEOUT` | 504 | `State/Timeout` | tak, tylko przy wyłączonym fallbacku (patrz niżej) |
+| `MODEL_UNAVAILABLE` | 503 | wiersz błędu z przyciskiem „Ponów” | tak, tylko przy wyłączonym fallbacku |
+| `INVALID_OUTPUT` | 500 | wiersz błędu | nie (heurystyka da ten sam wynik); komunikat dla użytkownika, bez „Ponów” |
 | `AUTH_MISCONFIGURED` | 500 | toast błędu | nie |
 | `INVALID_FORM_DEFINITION`, `INVALID_SAMPLE_VALUES` (`/validate`) | 422 | toast błędu; odpowiedź 200 z `errors` i `warnings` to `ResultValidation` | nie |
 
-`/ready` zawsze zwraca 200 i konfigurację (`llm`, `ocr`), więc „API niedostępne” oznacza brak odpowiedzi z `/health`, a niedostępny model to `MODEL_UNAVAILABLE` z `/analyze`.
+Odpowiedź błędu ma kopertę `{"error": {"code", "message", ...}}`. Walidacja ciała przez FastAPI (np. ciało niebędące obiektem JSON) może zwrócić `{"detail": [...]}` bez `error.code`, a nieoczekiwany wyjątek zwykłe 500 bez koperty. GUI musi pokazać wtedy ogólny błąd z samym statusem HTTP.
+
+`/ready` zawsze zwraca 200 i konfigurację (`llm`, `ocr`), więc „API niedostępne” oznacza brak odpowiedzi z `/health`.
+
+### Wynik zdegradowany (fallback heurystyczny)
+
+Przy `llm_fallback_heuristic=True` (domyślnie) awaria lub timeout modelu nie kończy się błędem: `pipeline.run` przechodzi na heurystykę i `/analyze` zwraca 200 z `X-Extractor: HeuristicExtractor`. To najczęstszy skutek awarii modelu. GUI pokazuje wtedy wynik z komunikatem informacyjnym („Model niedostępny, użyto ekstraktora heurystycznego”); ramka `State/DegradedResult`. Kody 503 i 504 pojawiają się dopiero po wyłączeniu fallbacku.
 
 ## Komponenty
 
@@ -75,7 +83,7 @@ Button (4 style × 3 stany), IconButton (Menu, Close), TextField (Default, Focus
 - **Kolejka:** pliki idą do `/analyze` po kolei, jeden aktywny naraz; wiersze: W kolejce, Analiza (pasek), Gotowe, Błąd (`error.code` + komunikat). Szczegóły pliku pokazują ekstraktor (`X-Extractor`), czas (`X-Processing-Time-Ms`) i rozmiar; wykryty typ (`X-Detected-Type`) i liczba ostrzeżeń (`X-Warnings`) trzeba jeszcze dodać do szczegółów.
 - **Limity:** Dropzone i Ustawienia pobierają dozwolone rozszerzenia i limit rozmiaru z `GET /api/v1/formats`; makiety pokazują wartości domyślne (25 MB, pdf, doc, docx, ods, xlsx, jpg, jpeg, png).
 - **JSON:** kolorowanie składni, „Kopiuj” i „Pobierz JSON” w `ResultJson`, „Waliduj ponownie” w `ResultValidation`; długi JSON przewija się i zwija sekcje.
-- **JWT:** pole tokenu w `Login`, token w `localStorage` (maskowany w Ustawieniach, „Usuń token”), przycisk „Kontynuuj bez logowania” dla `AUTH_ENABLED=false`.
+- **JWT:** pole tokenu w `Login`, token w `localStorage` (maskowany w Ustawieniach, „Usuń token”), przycisk „Kontynuuj bez logowania” dla `AUTH_ENABLED=false`. API nie ujawnia dziś tego ustawienia (`/ready` i `/formats` go nie zwracają), więc GUI nie wie, kiedy przycisk pokazać; do wdrożenia potrzebna jest flaga w API (np. `auth_enabled` w `/ready`), do tego czasu przycisk jest wyłącznie propozycją makiety.
 - **Typy pól:** galeria `COI/FieldTypes` na stronie „Komponenty”: TEXT_FIELD, TEXTAREA, NUMBER, DATEPICKER, SELECT ze słownikiem (etykieta „Słownik: Kraje”), FILE_UPLOADER, CONSENT_SECTION, INFO_SECTION, REPEATING_SECTION („Dodaj kolejny”); RADIO i CHECKBOX to `Choice`.
 - **Stany dynamiczne:** para `ResultPreview` (przed) i `PreviewDynamic` (po wybraniu „Inna osoba”: SHOW odsłania sekcję „Dane innej osoby”); READ_ONLY to pole `ReadOnly` / `ExternalSystem` (placeholder „MLPZ.name”); błąd JSONata to znacznik „błędny warunek”.
 - **E-usługa:** karta sekcji, wskaźnik kroków, „Wstecz”, „Dalej”, „Przerwij wypełnianie”, gwiazdka przy polach wymaganych.
@@ -103,4 +111,4 @@ Codex przeczytał opis makiet, kod API i brief (nie oglądał ramek FigCraft). Z
 
 ## Otwarta decyzja: stos GUI
 
-`FRONTEND-BRIEF.md` zakłada statyczny HTML/JS/CSS bez build stepu serwowany przez FastAPI. Specyfikacja makiet i `docs/04-architektura/pelna-aplikacja.md` zakładają aplikację React/TypeScript (Next.js, TanStack). Makiety i tokeny nie zależą od wyboru; zmiana stosu wymaga osobnej decyzji z konsekwencjami (zob. `AGENTS.md`).
+`FRONTEND-BRIEF.md` zakłada statyczny HTML/JS/CSS bez build stepu serwowany przez FastAPI. Specyfikacja makiet i `docs/04-architektura/pelna-aplikacja.md` zakładają aplikację React/TypeScript (Next.js, TanStack). Same makiety nie zależą od wyboru. `design/tokens.css` wymaga Tailwind v4 (`@import "tailwindcss"`, `@theme`); w statycznym HTML bez build stepu zmienne motywu Light nie powstaną i potrzebny byłby wariant na `:root`. Zmiana stosu wymaga osobnej decyzji z konsekwencjami (zob. `AGENTS.md`).

@@ -92,3 +92,47 @@ def test_contrast_aa(mode):
 
 def test_primary_light_is_brief_accent():
     assert _load()["primary"]["Light"] == "#0052A5"
+
+
+CSS = TOKENS.with_name("tokens.css")
+
+
+def _css_block(text: str, header: str) -> str:
+    start = text.index(header)
+    return text[start : text.index("}", start)]
+
+
+def test_css_matches_json_colors():
+    import re
+
+    css = CSS.read_text(encoding="utf-8")
+    light = dict(re.findall(r"--color-([a-z-]+): (#[0-9A-Fa-f]{6});", _css_block(css, "@theme static")))
+    dark = dict(re.findall(r"--color-([a-z-]+): (#[0-9A-Fa-f]{6});", _css_block(css, '[data-theme="Dark"]')))
+    tokens = _load()
+    for name in NAMES:
+        assert tokens[name]["Light"] == light[name].upper(), name
+        assert tokens[name]["Dark"] == dark[name].upper(), name
+
+
+def test_scale_tokens_in_json():
+    import re
+
+    data = json.loads(TOKENS.read_text(encoding="utf-8"))["meta"]
+    scale = next(c for c in data["variableCollections"].values() if c["name"] == "Scale")
+    mode = scale["modes"][0]["modeId"]
+    values = {
+        v["name"]: v["valuesByMode"][mode]
+        for v in data["variables"].values()
+        if v["variableCollectionId"] == scale["id"]
+    }
+    css = CSS.read_text(encoding="utf-8")
+    for name, px in re.findall(r"--((?:space|radius)-[a-z0-9]+): (\d+)px;", css):
+        assert values[name.replace("-", "/", 1)] == int(px), name
+    assert {"space/1", "space/8", "radius/sm", "radius/md", "radius/lg"} <= set(values)
+
+
+@pytest.mark.parametrize("mode", ["Light", "Dark"])
+def test_status_colors_on_background(mode):
+    t = {n: v[mode] for n, v in _load().items()}
+    for fg in ("success", "warning", "danger", "info"):
+        assert contrast(t[fg], t["background"]) >= 4.5, (mode, fg, contrast(t[fg], t["background"]))

@@ -10,7 +10,7 @@
 - CI uruchamia testy, ruff i sync materiałów na każdym push i PR; `main` i `develop` chronione.
 - Dodano interfejs przeglądu `/review/` (pkt 3.3 IV i V): podgląd PDF obok wszystkich pól, symulacja warunków JSONata w izolowanym workerze, uwagi i zgłoszenia braków, eksport czystego JSON i osobnego raportu. 13 testów Playwright.
 - Dockerfile ma etap `node:22.23.1-alpine3.24`, który buduje przypięte zasoby UI. `pyproject.toml` pakuje UI, `verify_docs.py` pomija `node_modules`.
-- Dodano makiety GUI (FigCraft): projekt i plan w `docs/superpowers/`, opis w `docs/08-implementacja/GUI-MAKIETY.md`, tokeny `design/tokens.css` i `design/tokens.json` oraz test kontrastu WCAG `tests/test_gui_tokens.py`. Plik `.figcraft` nie jest w Git (silnik FigCraft nie zapisuje do repo).
+- Dodano makiety GUI (FigCraft): projekt i plan w `docs/superpowers/`, opis w `docs/08-implementacja/GUI-MAKIETY.md`, tokeny `design/tokens.css` i `design/tokens.json` (generator `scripts/gui_tokens_from_css.py`) oraz testy kontrastu WCAG i spójności tokenów `tests/test_gui_tokens.py`. Plik `.figcraft` nie jest w Git (silnik FigCraft nie zapisuje do repo).
 
 ## 0.4.0 — 2026-11-21
 
