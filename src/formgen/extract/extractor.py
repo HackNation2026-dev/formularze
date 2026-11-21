@@ -10,7 +10,7 @@ from rapidfuzz import fuzz
 from formgen.api.settings import Settings
 from formgen.compose.dictionaries import dictionary_for, with_proposed
 from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec, PageSpec, SectionSpec
-from formgen.extract.llm_client import LlmClient
+from formgen.extract.llm_client import LlmClient, make_client
 from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER, SYSTEM
 from formgen.extract.schema import LlmChunk, LlmGlobal, LlmSection
 from formgen.ingest import Document, load
@@ -77,7 +77,7 @@ class LlmExtractor:
         return self.extract_document(doc, filename, settings)
 
     def extract_document(self, doc: Document, filename: str, settings: Settings) -> FormSpec:
-        client = self.client or LlmClient(settings.llm_base_url, settings.llm_model, settings.llm_timeout_seconds)
+        client = self.client or make_client(settings)
         full = doc.to_prompt_text()
         g = client.complete(SYSTEM, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, max_tokens=512)
         sections: list[LlmSection] = []

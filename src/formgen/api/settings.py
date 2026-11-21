@@ -30,9 +30,13 @@ class Settings(BaseSettings):
     jwt_audience: str | None = None
     jwt_leeway_seconds: int = 30
 
-    # integrations (local services only; no external API)
+    # LLM endpoint: any OpenAI-compatible server hosting an OPEN model (local llama.cpp by default; a cloud
+    # deployment of the same open model is allowed per the mentor's ruling). LLM_FALLBACK_BASE_URL = local backup.
     llm_base_url: str = "http://llm:8080"
     llm_model: str = "qwen3.5-4b"
+    llm_api_key: str = ""  # runtime secret, never baked into the image
+    llm_fallback_base_url: str | None = None
+    llm_fallback_model: str | None = None
     llm_timeout_seconds: int = 300
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited
     ocr_base_url: str | None = None

@@ -17,7 +17,7 @@ from formgen import pipeline
 from formgen.api.settings import Settings
 from formgen.eval.metric import compare
 from formgen.extract import LlmExtractor
-from formgen.extract.llm_client import LlmClient
+from formgen.extract.llm_client import make_client
 from formgen.ingest.detect import detect_kind
 from formgen.schema import FormDefinition, Severity
 
@@ -33,7 +33,7 @@ def main() -> None:
     s = Settings(
         _env_file=None, llm_base_url=os.environ.get("LLM_BASE_URL", "http://127.0.0.1:8080"), auth_enabled=False
     )
-    client = LlmClient(s.llm_base_url, s.llm_model, s.llm_timeout_seconds)
+    client = make_client(s)
     if not client.alive():
         sys.exit(f"llama.cpp not reachable at {s.llm_base_url}")
     t0 = time.perf_counter()
