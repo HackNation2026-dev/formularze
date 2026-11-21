@@ -189,15 +189,17 @@ async def test_health_answers_while_analyze_is_running(monkeypatch):
     monkeypatch.setattr(pipeline, "run", _blocking_run(release))
     app = create_app(Settings(auth_enabled=False, extractor="stub", _env_file=None))
     pdf = next(p for p in SAMPLE_FILES if p.suffix.lower() == ".pdf")
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
-        async with anyio.create_task_group() as tg:
-            files = {"file": (pdf.name, pdf.read_bytes())}
-            t0 = time.perf_counter()
-            tg.start_soon(lambda: c.post("/api/v1/forms/analyze", files=files))
-            await anyio.sleep(0.2)
-            health = await c.get("/health")
-            elapsed = time.perf_counter() - t0
-            release.set()
+    files = {"file": (pdf.name, pdf.read_bytes())}
+    async with (
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c,
+        anyio.create_task_group() as tg,
+    ):
+        t0 = time.perf_counter()
+        tg.start_soon(lambda: c.post("/api/v1/forms/analyze", files=files))
+        await anyio.sleep(0.2)
+        health = await c.get("/health")
+        elapsed = time.perf_counter() - t0
+        release.set()
     assert health.status_code == 200
     assert elapsed < 2.0, f"/health waited {elapsed:.1f}s behind a running analyze"
 

@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import anyio
 from fastapi import Depends, FastAPI, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +17,7 @@ from formgen.api.errors import ApiError
 from formgen.api.security import require_auth
 from formgen.api.settings import Settings, get_settings
 from formgen.api.upload import validate_upload
+from formgen.extract.llm_client import make_client
 from formgen.schema import FormDefinition, Severity, check_rules, check_sample_values
 
 log = logging.getLogger("formgen")
@@ -42,8 +44,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     @app.get("/ready", tags=["ops"])
-    async def ready(st: Settings = Depends(get_settings)) -> dict[str, Any]:
-        return {"status": "ok", "llm": st.llm_base_url, "ocr": st.ocr_backend}
+    async def ready(st: Settings = Depends(get_settings)) -> JSONResponse:
+        body: dict[str, Any] = {
+            "status": "ok",
+            "extractor": st.extractor,
+            "llm": st.llm_base_url,
+            "ocr": st.ocr_backend,
+        }
+        if st.extractor == "llm":
+            body["llm_alive"] = await anyio.to_thread.run_sync(make_client(st).alive)
+            if not body["llm_alive"]:
+                # with the heuristic fallback the service still answers, only with lower quality
+                body["status"] = "degraded" if st.llm_fallback_heuristic else "unavailable"
+        return JSONResponse(body, status_code=503 if body["status"] == "unavailable" else 200)
 
     @app.get("/api/v1/formats", tags=["forms"])
     async def formats(st: Settings = Depends(get_settings)) -> dict[str, Any]:
@@ -61,9 +74,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # R-08: nothing persisted; any scratch files live in a per-request temp dir
         with tempfile.TemporaryDirectory(prefix="formgen-") as _tmp:
             try:
-                result = pipeline.run(up.data, up.kind, up.filename, st)
+                # pipeline.run is blocking (OCR, LLM over HTTP); keep the event loop free for other requests.
+                # On timeout the worker thread is abandoned and finishes in the background.
+                with anyio.fail_after(st.request_timeout_seconds):
+                    result = await anyio.to_thread.run_sync(
+                        pipeline.run, up.data, up.kind, up.filename, st, abandon_on_cancel=True
+                    )
             except TimeoutError as exc:
-                raise ApiError(504, "PROCESSING_TIMEOUT", str(exc)) from exc
+                raise ApiError(
+                    504, "PROCESSING_TIMEOUT", str(exc) or f"processing exceeded {st.request_timeout_seconds} s"
+                ) from exc
             except ConnectionError as exc:
                 raise ApiError(503, "MODEL_UNAVAILABLE", str(exc)) from exc
         if not result.ok:
