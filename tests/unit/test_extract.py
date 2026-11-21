@@ -1,8 +1,13 @@
 """Extractor post-processing (no LLM needed): grounding, template-label dropping, spec assembly."""
 
+import pytest
+
 from formgen.compose import compose
+from formgen.compose.dictionaries import proposed_for
 from formgen.extract.extractor import to_spec
+from formgen.extract.heuristic import extract_document
 from formgen.extract.schema import LlmChunk, LlmCondition, LlmField, LlmGlobal, LlmSection, json_schema
+from formgen.ingest import Document, Line, Page
 from formgen.schema import Severity, check_rules
 
 SOURCE = """## WNIOSEK o stwierdzenie nadpłaty podatku
@@ -287,3 +292,79 @@ def test_llm_address_like_labels_get_dictionaries():
     spec = to_spec(g, secs, "Miejscowość ____ Gmina ____", with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [(f.kind, f.dictionary) for f in fields] == [("SELECT", "Miejscowość"), ("SELECT", "Gmina")]
+
+
+@pytest.mark.parametrize(
+    ("label", "name"),
+    [
+        ("Dyscyplina sportowa", "Dyscypliny sportowe"),
+        ("Dyscypliny sportowe:", "Dyscypliny sportowe"),
+        ("Rasa psa", "Rasy psów wymagające zezwolenia"),
+        ("Rasy psów", "Rasy psów wymagające zezwolenia"),
+        ("Rodzaj podatku", "Rodzaje podatków i opłat lokalnych"),
+        ("Nazwa podatku", "Rodzaje podatków i opłat lokalnych"),
+        ("Podatek, którego dotyczy nadpłata", "Rodzaje podatków i opłat lokalnych"),
+        ("Z tytułu podatku", "Rodzaje podatków i opłat lokalnych"),
+        ("Rodzaj wniosku", None),
+        ("Kwota nadpłaty", None),
+        ("Rasa", None),
+        ("Województwo", None),
+        ("Powiat", None),
+        ("Gmina", None),
+        ("Miejscowość", None),
+        ("Kraj", None),
+        ("Ulica", None),
+        ("Kod pocztowy", None),
+    ],
+)
+def test_proposed_dictionary_for_label(label, name):
+    proposed = proposed_for(label)
+    assert (proposed.name if proposed else None) == name
+
+
+BREEDS = [
+    "amerykański pit bull terrier",
+    "pies z Majorki (Perro de Presa Mallorquin)",
+    "buldog amerykański",
+    "dog argentyński",
+    "pies kanaryjski (Perro de Presa Canario)",
+    "tosa inu",
+    "rottweiler",
+    "akbash dog",
+    "anatolian karabash",
+    "moskiewski stróżujący",
+    "owczarek kaukaski",
+    "chart rasowy",
+    "mieszaniec charta",
+]
+
+
+def test_llm_field_matching_proposed_dictionary_gets_its_options_and_passes_rules():
+    g = LlmGlobal(title="Wniosek o zezwolenie na utrzymywanie psa")
+    secs = [
+        LlmSection(
+            page_title="Dane psa",
+            title="Dane psa",
+            fields=[
+                LlmField(label="Rasa psa", kind="TEXT_FIELD"),
+                LlmField(label="Rodzaj podatku", kind="RADIO", options=["podatek rolny", "podatek leśny"]),
+            ],
+        )
+    ]
+    spec = to_spec(g, secs, "Rasa psa ____ Rodzaj podatku ☐ podatek rolny ☐ podatek leśny", with_validators=True)
+    rasa, podatek = spec.pages[0].sections[0].fields
+    assert (rasa.kind, rasa.options, rasa.dictionary) == ("SELECT", BREEDS, None)
+    assert (podatek.kind, podatek.options) == ("RADIO", ["podatek rolny", "podatek leśny"])
+    form = compose(spec)
+    assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
+    out = next(f for _, f in form.iter_fields() if f.title == "Rasa psa")
+    assert [o.name for o in out.options] == BREEDS and out.dictionaryName is None
+    assert out.tooltipMessage == "Proponowany słownik: Rasy psów wymagające zezwolenia"
+
+
+def test_heuristic_dotted_line_matching_proposed_dictionary_gets_its_options():
+    doc = Document(pages=[Page(number=1, lines=[Line("Dane psa", bold=True), Line("Rasa psa: ..........")])])
+    spec = extract_document(doc, "wniosek.pdf")
+    rasa = next(f for p in spec.pages for s in p.sections for f in s.fields if f.label == "Rasa psa")
+    assert (rasa.kind, rasa.options) == ("SELECT", BREEDS)
+    assert not [v for v in check_rules(compose(spec)) if v.severity == Severity.ERROR]
