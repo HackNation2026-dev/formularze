@@ -8,9 +8,9 @@ import re
 from rapidfuzz import fuzz
 
 from formgen.api.settings import Settings
-from formgen.compose.dictionaries import dictionary_for
+from formgen.compose.dictionaries import dictionary_for, with_proposed
 from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec, PageSpec, SectionSpec
-from formgen.extract.llm_client import LlmClient
+from formgen.extract.llm_client import LlmClient, make_client
 from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER, SYSTEM
 from formgen.extract.schema import LlmChunk, LlmGlobal, LlmSection
 from formgen.ingest import Document, load
@@ -77,7 +77,7 @@ class LlmExtractor:
         return self.extract_document(doc, filename, settings)
 
     def extract_document(self, doc: Document, filename: str, settings: Settings) -> FormSpec:
-        client = self.client or LlmClient(settings.llm_base_url, settings.llm_model, settings.llm_timeout_seconds)
+        client = self.client or make_client(settings)
         full = doc.to_prompt_text()
         g = client.complete(SYSTEM, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, max_tokens=512)
         sections: list[LlmSection] = []
@@ -192,15 +192,17 @@ def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_
             if dictionary:  # predefined dictionaries attach only to a drop-down list
                 kind = FieldType.SELECT
             fields.append(
-                FieldSpec(
-                    label=f.label.strip().rstrip(":"),
-                    kind=kind,
-                    options=[o.strip() for o in f.options if o.strip()],
-                    required=f.required,
-                    validators=validators,
-                    description=f.description.strip(),
-                    visible_when=_cond(f.visible_when),
-                    dictionary=dictionary,
+                with_proposed(
+                    FieldSpec(
+                        label=f.label.strip().rstrip(":"),
+                        kind=kind,
+                        options=[o.strip() for o in f.options if o.strip()],
+                        required=f.required,
+                        validators=validators,
+                        description=f.description.strip(),
+                        visible_when=_cond(f.visible_when),
+                        dictionary=dictionary,
+                    )
                 )
             )
         if not fields:

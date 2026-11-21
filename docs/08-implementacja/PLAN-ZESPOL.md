@@ -33,7 +33,7 @@ Definicja ukończenia: każdy z 7 JSON-ów przejrzany, lista błędów zamknięt
 ## Strumień C. Walidatory i nowy słownik (1 osoba, punkty II + V)
 1. Przenieś algorytmy z `docs/08-implementacja/research/spikes/03_validators_check.py` do `src/formgen/schema/validators.py` (PESEL, NIP, REGON, kod pocztowy, dowód, ePUAP, ADE). Testy.
 2. Endpoint `POST /api/v1/forms/validate` ma zwracać też błędy przykładowych wartości (opcjonalnie) albo frontend używa tych funkcji w JS.
-3. Nowy słownik: z outputów 09 (dyscypliny sportowe), 07 (rasy psów), 05 (rodzaje podatku). Dokument `docs/08-implementacja/NOWE-SLOWNIKI.md`: nazwa, struktura (id, name, techName), wartości, pola, które go użyją. Forma w JSON zależy od odpowiedzi mentora (pytanie 3 na Discordzie); domyślnie `options` w polu + dokument.
+3. Nowy słownik: z outputów 09 (dyscypliny sportowe), 07 (rasy psów), 05 (rodzaje podatku). Dokument [`docs/08-implementacja/NOWE-SLOWNIKI.md`](NOWE-SLOWNIKI.md): nazwa, struktura (id, name, techName), wartości, pola, które go użyją. Forma w JSON zależy od odpowiedzi mentora (pytanie 3 na Discordzie); domyślnie `options` w polu + dokument.
 Definicja ukończenia: walidatory mają testy na poprawnych i błędnych numerach; dokument słowników ma min. 2 słowniki z wartościami.
 
 ## Strumień D. Dostarczenie i obrona (1 osoba, potencjał wdrożeniowy 20% + wymagania formalne)

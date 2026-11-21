@@ -1,0 +1,41 @@
+INFO httpx: HTTP Request: GET http://100.111.226.49:18081/health "HTTP/1.1 200 OK"
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmGlobal 4.0s tokens=785/118 finish=stop
+INFO httpx: HTTP Request: POST http://100.111.226.49:18081/v1/chat/completions "HTTP/1.1 200 OK"
+INFO formgen.llm: llm LlmChunk 17.4s tokens=2008/423 finish=stop
+INFO formgen.extract: dropped 1 LLM fields: ['ungrounded:Inny dokument']
+
+=== Wniosek o stwierdzenie nadpłaty podatku.PDF (pdf, 1.00) in 21.5s; llm calls: [{'schema': 'LlmGlobal', 'seconds': 4.0, 'prompt_tokens': 785, 'completion_tokens': 118, 'finish': 'stop'}, {'schema': 'LlmChunk', 'seconds': 17.4, 'prompt_tokens': 2008, 'completion_tokens': 423, 'finish': 'stop'}]
+title: Wniosek o stwierdzenie nadpłaty podatku
+  [MAIN] Dane
+     - Urząd, do którego jest składany wniosek (urzad_do_ktorego_jest_skladany_wniosek)
+     - Podmiot wniosku (podmiot_wniosku)
+     - Twoje dane (twoje_dane)
+     - Adres zamieszkania (adres_zamieszkania)
+     - Dane podmiotu (dane_podmiotu) [SHOW]
+     - Adres siedziby (adres_siedziby) [SHOW]
+     - Potwierdzenie, że jesteś reprezentantem (potwierdzenie_ze_jestes_reprezentantem) [SHOW]
+     - Dane innej osoby (dane_innej_osoby) [SHOW]
+     - Adres zamieszkania innej osoby (adres_zamieszkania_osoby_ktorej_jestes_pelnomocnikiem) [SHOW]
+     - Pełnomocnictwo (pelnomocnictwo) [SHOW]
+     - Opłata skarbowa (oplata_skarbowa_pelnomocnictwo_1) [SHOW]
+     - Opłata skarbowa za pełnomocnictwo (oplata_skarbowa_pelnomocnictwo_2) [SHOW]
+  [MAIN] Informacje o nadpłacie
+     - Rozliczenie nadpłaty (rozliczenie_nadplaty)
+         . RADIO         'Wybierz, co mamy zrobić z nadpłatą' ['REQUIRED'] opts=['Zaliczyć na poczet przyszłego zobowiązania podatkowego', 'Zwrócić przelewem na wskazany rachunek']
+         . TEXT_FIELD    'Nazwa podatku' ['REQUIRED'] [SHOW]
+         . TEXT_FIELD    'Numer rachunku' ['REQUIRED'] [SHOW]
+  [MAIN] Załączniki
+     - Lista załączników (lista_zalacznikow)
+         . FILE_UPLOADER 'Korekta deklaracji' ['REQUIRED']
+         . FILE_UPLOADER 'Dodatkowy dokument' []
+  [MAIN] Kontakt i zgody
+     - Dane do kontaktu (dane_do_kontaktu)
+     - Zgoda (zgoda_wyrazenie)
+  [FINISH] Strona końcowa
+     - Podgląd uzupełnionego wniosku (podglad_uzupelnionego_wniosku)
+rule errors: none | warnings: 0
+GOLDEN: P=0.77 R=0.93 F1=0.84 type=1.00 section=1.00 show=0.97 composite=0.92
+  missing: ['Informacje o nadpłacie/Informacje o nadpłacie/podatek_ktorego_dotyczy_nadplata', 'Informacje o nadpłacie/Informacje o nadpłacie/kwota', 'Informacje o nadpłacie/Informacje o nadpłacie/uzasadnienie', 'Informacje o nadpłacie/Korekta deklaracji/plik_deklaracji_podatkowej']
+  extra:   ['Dane/Adres zamieszkania/powiat', 'Dane/Adres zamieszkania/gmina', 'Dane/Adres zamieszkania/miejscowosc', 'Dane/Dane podmiotu/regon', 'Dane/Dane podmiotu/numer_krs', 'Dane/Adres siedziby/powiat_siedziba', 'Dane/Adres siedziby/gmina_siedziba', 'Dane/Adres siedziby/miejscowosc_siedziba', 'Dane/Dane innej osoby/numer_pesel_inna_osoba', 'Dane/Adres zamieszkania innej osoby/powiat_inna_osoba', 'Dane/Adres zamieszkania innej osoby/gmina_inna_osoba', 'Dane/Adres zamieszkania innej osoby/miejscowosc_inna_osoba', 'Załączniki/Lista załączników/korekta_deklaracji', 'Załączniki/Lista załączników/dodatkowy_dokument', 'Kontakt i zgody/Dane do kontaktu/numer_kierunkowy']
+written /private/tmp/claude-501/-Users-mateuszkin--t3-projects-hacknation-cyfr-forumla/80143b42-03bd-4d60-aa70-c37a2d8778ff/scratchpad/05_after_run2.json

@@ -95,7 +95,7 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 | Metoda i ścieżka | Auth | Opis |
 |---|---|---|
 | `POST /api/v1/forms/analyze` | Bearer | `multipart/form-data`, pole `file` (jeden plik). 200: JSON `FormDefinition`. Nagłówki: `X-Processing-Time-Ms`, `X-Detected-Type`, `X-Warnings` |
-| `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition`; zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI |
+| `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
 | `GET /health`, `GET /ready` | – | liveness / readiness |
 

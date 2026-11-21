@@ -14,7 +14,7 @@ from formgen.api.errors import ApiError
 from formgen.api.security import require_auth
 from formgen.api.settings import Settings, get_settings
 from formgen.api.upload import validate_upload
-from formgen.schema import FormDefinition, Severity, check_rules
+from formgen.schema import FormDefinition, Severity, check_rules, check_sample_values
 
 log = logging.getLogger("formgen")
 
@@ -80,15 +80,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/v1/forms/validate", tags=["forms"])
     async def validate(body: dict[str, Any], _auth: dict | None = Depends(require_auth)) -> dict[str, Any]:
+        sample_values = body.pop("sample_values", None) or {}
+        if not isinstance(sample_values, dict):
+            raise ApiError(422, "INVALID_SAMPLE_VALUES", "sample_values must be an object techName -> value")
         try:
             form = FormDefinition.from_json_dict(body)
         except Exception as exc:  # pydantic ValidationError
             raise ApiError(422, "INVALID_FORM_DEFINITION", str(exc)[:2000]) from exc
         v = check_rules(form)
+        sample_errors, sample_unknown = check_sample_values(form, sample_values)
         return {
             "valid": not any(x.severity == Severity.ERROR for x in v),
             "errors": [x.__dict__ for x in v if x.severity == Severity.ERROR],
             "warnings": [x.__dict__ for x in v if x.severity == Severity.WARNING],
+            "sample_errors": sample_errors,
+            "sample_unknown": sample_unknown,
         }
 
     return app
