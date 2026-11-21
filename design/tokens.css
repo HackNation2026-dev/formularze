@@ -30,12 +30,6 @@
   --color-danger: #FF8A80;
   --color-info: #7DB6F5;
 }
-/* Lang · PL */
-@theme static {
-}
-/* Lang · EN */
-[data-lang="EN"] {
-}
 /* Scale · Mode 1 */
 @theme static {
   --space-1: 4px;
