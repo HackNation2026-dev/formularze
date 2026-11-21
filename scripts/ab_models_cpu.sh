@@ -5,10 +5,9 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 PY=${PY:-/Users/mateuszkin/.t3/projects/hacknation-cyfr-forumla/.venv/bin/python}
-HOST=legion; IP=100.111.226.49; PORT=18082; THREADS=12
+HOST=legion; IP=100.111.226.49; PORT=18082; THREADS=${THREADS:-6}   # physical cores; HT threads slow llama.cpp down
 OUT=docs/08-implementacja/research/ab-models-cpu.md
 MODELS=(
-  "unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-Q8_0.gguf"
   "unsloth/Qwen3.5-2B-GGUF   Qwen3.5-2B-Q4_K_M.gguf"
   "unsloth/Qwen3.5-4B-GGUF   Qwen3.5-4B-Q4_K_M.gguf"
 )
@@ -16,7 +15,7 @@ G05="data/input/01_przyklady_formularze/05_nadplata_podatku/Wniosek o stwierdzen
 G01="data/input/01_przyklady_formularze/01_numer_porzadkowy_nieruchomosci/Wniosek o ustalenie numeru porządkowego nieruchomości.pdf"
 {
   echo "---"; echo "wersja: 0.4.0"; echo "aktualizacja: $(date +%F)"; echo "status: pomiar"; echo "---"; echo
-  echo "# A/B rozmiaru modelu na samym CPU (x86, i7-9750H, 12 wątków, llama.cpp server-b12602)"; echo
+  echo "# A/B rozmiaru modelu na samym CPU (x86, i7-9750H, 6 rdzeni, llama.cpp server-b12602, nic innego na maszynie)"; echo
   echo "Pytanie: czy mniejszy model wystarcza, skoro kompilator i walidator robią większość pracy. Jury może nie mieć GPU."; echo
   echo "| Model | Plik | Golden 05 composite / recall / czas | Golden 01 composite / recall / czas | Formularz 08 (6 str.) czas | Błędy reguł |"
   echo "|---|---|---|---|---|---|"

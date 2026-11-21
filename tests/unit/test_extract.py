@@ -368,3 +368,15 @@ def test_heuristic_dotted_line_matching_proposed_dictionary_gets_its_options():
     rasa = next(f for p in spec.pages for s in p.sections for f in s.fields if f.label == "Rasa psa")
     assert (rasa.kind, rasa.options) == ("SELECT", BREEDS)
     assert not [v for v in check_rules(compose(spec)) if v.severity == Severity.ERROR]
+
+
+def test_section_prompt_has_cacheable_prefix():
+    """On CPU llama.cpp reuses the KV cache only for an identical prefix: chunk-specific text must come last."""
+    from formgen.extract.prompts import SECTIONS_USER
+
+    a = SECTIONS_USER.format(pages="strony 1-2", text="AAA")
+    b = SECTIONS_USER.format(pages="strony 3-4", text="BBB")
+    i = 0
+    while i < min(len(a), len(b)) and a[i] == b[i]:
+        i += 1
+    assert i > len(a) - 60, "chunk-specific content must sit at the very end of the prompt"
