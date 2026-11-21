@@ -8,6 +8,7 @@ import re
 from rapidfuzz import fuzz
 
 from formgen.api.settings import Settings
+from formgen.compose.dictionaries import dictionary_for
 from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec, PageSpec, SectionSpec
 from formgen.extract.llm_client import LlmClient
 from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER, SYSTEM
@@ -185,6 +186,11 @@ def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_
                 dropped.append(f"duplicate:{f.label}")
                 continue
             validators = [Validator(f.validator)] if f.validator else []
+            dictionary = (
+                dictionary_for(f.label) if kind in (FieldType.TEXT_FIELD, FieldType.SELECT, FieldType.RADIO) else None
+            )
+            if dictionary:  # predefined dictionaries attach only to a drop-down list
+                kind = FieldType.SELECT
             fields.append(
                 FieldSpec(
                     label=f.label.strip().rstrip(":"),
@@ -194,6 +200,7 @@ def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_
                     validators=validators,
                     description=f.description.strip(),
                     visible_when=_cond(f.visible_when),
+                    dictionary=dictionary,
                 )
             )
         if not fields:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from formgen.compose import jsonata as jq
 from formgen.compose.builders import consent_section, field, section, show, text
+from formgen.compose.dictionaries import GMINA, KRAJE, MIEJSCOWOSC, NUMERY_KIERUNKOWE, POWIAT, WOJEWODZTWO
 from formgen.schema.model import FieldType, Question, Validator
 
 DANE = "Dane"
@@ -15,8 +16,6 @@ OPT_INNEJ = "Innej osoby"
 OPT_PRAWNEJ = "Osoby prawnej lub jednostki organizacyjnej"
 OPT_PELNOMOCNIK = "Pełnomocnik"
 OPT_REPREZENTANT = "Reprezentant"
-KRAJE = "Kraje"
-TERYT = "TERYT_4G_DOWODOWY"
 
 TXT_PELNOMOCNICTWO = "Dodaj dokument potwierdzający, że jesteś pełnomocnikiem."
 TXT_REPREZENTANT = (
@@ -149,16 +148,23 @@ def sec_adres(
         text(f"miejscowosc{suffix}_zagranica", "Miejscowość", states=[abroad], validation=_req(v)),
         text(f"kod_pocztowy{suffix}_zagranica", "Kod pocztowy", states=[abroad], validation=_req(v)),
         text(f"ulica{suffix}_zagranica", "Ulica", states=[abroad], validation=_req(v)),
-        field(
-            FieldType.SELECT,
-            f"wojewodztwo{suffix}",
-            TERYT,
-            dictionary=TERYT,
-            search=True,
-            multi_level=True,
-            states=[pl],
-            validation=_req(v),
-        ),
+        *[
+            field(
+                FieldType.SELECT,
+                f"{slug}{suffix}",
+                label,
+                dictionary=name,
+                search=True,
+                states=[pl],
+                validation=_req(v),
+            )
+            for slug, label, name in (
+                ("wojewodztwo", "Województwo", WOJEWODZTWO),
+                ("powiat", "Powiat", POWIAT),
+                ("gmina", "Gmina", GMINA),
+                ("miejscowosc", "Miejscowość", MIEJSCOWOSC),
+            )
+        ],
         text(
             f"kod_pocztowy{suffix}",
             "Kod pocztowy",
@@ -279,6 +285,14 @@ def sec_kontakt(v: bool) -> Question:
         "dane_do_kontaktu",
         "Dane do kontaktu",
         [
+            field(
+                FieldType.SELECT,
+                "numer_kierunkowy",
+                "Numer kierunkowy",
+                dictionary=NUMERY_KIERUNKOWE,
+                default=["+48"],
+                search=True,
+            ),
             text("numer_telefonu", "Numer telefonu", external="MLPZ.phoneNumber"),
             text("adres_e_mail", "Adres e-mail", external="MLPZ.email", validation=[Validator.EMAIL] if v else []),
         ],

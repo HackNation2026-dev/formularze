@@ -11,6 +11,7 @@ import itertools
 from dataclasses import dataclass
 from enum import StrEnum
 
+from formgen.compose.dictionaries import SELECT_ONLY
 from formgen.schema.jsonata_lint import lint_query
 from formgen.schema.model import (
     CONTAINER_TYPES,
@@ -113,6 +114,8 @@ def check_rules(form: FormDefinition) -> list[Violation]:
         # R-T9 dictionaries only on SELECT/RADIO/CHECKBOX
         if f.dictionaryName and f.type not in DICTIONARY_TYPES:
             err("DICTIONARY_ON_WRONG_TYPE", f"dictionary on {f.type}", path)
+        if f.dictionaryName in SELECT_ONLY and f.type != FieldType.SELECT:
+            err("DICTIONARY_SELECT_ONLY", f"dictionary '{f.dictionaryName}' allowed only on SELECT, got {f.type}", path)
         # R-T10 initial data => EXTERNAL_SYSTEM must have a source.attr default
         if f.defaultValueType == "EXTERNAL_SYSTEM":
             dv = f.defaultValue if isinstance(f.defaultValue, str) else ""

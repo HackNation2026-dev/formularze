@@ -266,3 +266,24 @@ def test_yes_no_attachment_radio_stays_radio_and_dash_labels_dropped():
     spec = to_spec(g, secs, "Załącznik A TAK NIE", with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [(f.label, f.kind) for f in fields] == [("Załącznik A", "RADIO")]
+
+
+def test_llm_address_like_labels_get_dictionaries():
+    from formgen.compose.dictionaries import dictionary_for
+
+    assert dictionary_for("Kraj urodzenia") == "Kraje"
+    assert dictionary_for("Obywatelstwo") == "Kraje"
+    assert dictionary_for("Województwo") == "Województwo"
+    assert dictionary_for("Gmina") == "Gmina"
+    assert dictionary_for("Miejscowość") == "Miejscowość"
+    assert dictionary_for("Numer kierunkowy") == "Numery kierunkowe"
+    assert dictionary_for("Rodzaj podatku") is None
+    g = LlmGlobal(title="x")
+    secs = [
+        LlmSection(
+            page_title="P", title="Lokalizacja budynku", fields=[LlmField(label="Miejscowość"), LlmField(label="Gmina")]
+        )
+    ]
+    spec = to_spec(g, secs, "Miejscowość ____ Gmina ____", with_validators=True)
+    fields = spec.pages[0].sections[0].fields
+    assert [(f.kind, f.dictionary) for f in fields] == [("SELECT", "Miejscowość"), ("SELECT", "Gmina")]

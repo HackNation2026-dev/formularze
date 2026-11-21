@@ -169,3 +169,29 @@ def test_subject_section_named_like_template_does_not_collide():
     names = [f.techName for _, f in form.iter_fields()]
     assert len(names) == len(set(names))
     assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
+
+
+def test_address_uses_dictionaries_from_slowniki_document():
+    """Mentor (Discord 2026-11-21): use the dictionaries from the Słowniki document, not TERYT_* from the examples."""
+    form = compose(SPEC_05)
+    used = {f.dictionaryName for _, f in form.iter_fields() if f.dictionaryName}
+    assert {"Kraje", "Województwo", "Powiat", "Gmina", "Miejscowość", "Numery kierunkowe"} <= used
+    assert not any(name.startswith("TERYT") for name in used)
+    adres = next(q.field for q in form.tabs[0].questions if q.field.techName == "adres_zamieszkania")
+    order = [f.techName for f in adres.iter_fields()]
+    assert (
+        order.index("wojewodztwo")
+        < order.index("powiat")
+        < order.index("gmina")
+        < order.index("miejscowosc")
+        < order.index("kod_pocztowy")
+    )
+    assert all(f.type == "SELECT" for _, f in form.iter_fields() if f.dictionaryName)
+
+
+def test_rule_rejects_predefined_dictionary_outside_select():
+    form = compose(SPEC_05)
+    kraj = next(f for _, f in form.iter_fields() if f.techName == "kraj")
+    kraj.type = FieldType.RADIO
+    codes = [v.code for v in check_rules(form) if v.severity == Severity.ERROR]
+    assert "DICTIONARY_SELECT_ONLY" in codes

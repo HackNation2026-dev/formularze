@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 
 from formgen.api.settings import Settings
+from formgen.compose.dictionaries import dictionary_for
 from formgen.compose.spec import FieldSpec, FormSpec, PageSpec, SectionSpec
 from formgen.extract.extractor import applicant_kinds, is_template_label
 from formgen.extract.schema import LlmGlobal
@@ -133,11 +134,13 @@ def extract_document(doc: Document, filename: str, with_validators: bool = True)
             pending_label = ""
             if is_template_label(label, section.title):
                 continue
+            dictionary = dictionary_for(label)
             _add(
                 section,
                 FieldSpec(
                     label=label,
-                    kind=_kind_for(label),
+                    kind=FieldType.SELECT if dictionary else _kind_for(label),
+                    dictionary=dictionary,
                     required=not OPTIONAL_RE.search(ln),
                     validators=_validators(label),
                 ),
