@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data/input/04_formularze_do_oceny/09_stypendium_sportowe/Wniosek o przyznanie stypendium.pdf"
-OTHER_RE = re.compile(r"\binn[aey]\b.*dyscyplin|dyscyplin.*\binn[aey]\b", re.I)
+OTHER_RE = re.compile(r"\binn\w*\b.*dyscyplin|dyscyplin.*\binn\w*\b", re.I)
 
 
 def norm(s: str) -> str:

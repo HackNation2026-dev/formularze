@@ -41,6 +41,7 @@ Nasz kod już robi wszystko z tabeli powyżej.
 
 - **Architektura obrazu Docker:** jury uruchamia na x86. Nasz obraz jest zbudowany i przetestowany na x86 (Legion), arm64 nie jest potrzebny.
 - **Słowniki:** nazwy i wartości z pliku „Słowniki”. Kod używa ich od wersji z 21.11 wieczorem.
+- **Sprzęt jury (mentor, Discord 21.11 wieczór):** maszyna bez GPU. Model musi działać na CPU; o RAM nie wiemy. Wolno używać modeli językowych, ale tylko otwartych; modele dostępne wyłącznie przez API są zakazane; komunikacja z modelem po API jest dozwolona (nasz układ: llama.cpp w kontenerze, HTTP). Otwarte: czy otwarty model u zewnętrznego dostawcy wołany po API jest dopuszczalny.
 - **Walidatory (mentor, Discord 21.11 wieczór):** puste tablice `validation` w przykładach nie są wzorem. Jeśli analiza wskazuje walidację, używamy dostępnych walidatorów. `WITH_VALIDATORS=true` zostaje domyślne; wersja bez walidatorów nie jest potrzebna.
 
 ## Pytania, na które dokumenty nie odpowiadają

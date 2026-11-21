@@ -33,10 +33,10 @@ ZASADY:
 - page_title: nazwa strony tematycznej (np. "Informacje o nadpłacie", "Lokalizacja budynku"). Pokrewne sekcje mają ten sam page_title. Zwykle 1-3 strony.
 - title: nazwa sekcji w prostym języku. Sekcja grupuje 1-8 pól.
 - label: etykieta pola w prostym, uprzejmym języku, bez numerów pozycji ("3. PESEL" -> "PESEL"), bez skrótów.
-- kind: TEXT_FIELD (krótki tekst), TEXTAREA (opis, uzasadnienie), NUMBER (kwota, liczba, powierzchnia), DATEPICKER (data), RADIO (jedna opcja z kratek), CHECKBOX (wiele opcji), SELECT (lista > 5 opcji), FILE_UPLOADER (załącznik, dokument do dołączenia), TEXT_BLOCK (informacja dla użytkownika, bez wpisywania).
+- kind: TEXT_FIELD (krótki tekst), TEXTAREA (opis, uzasadnienie), NUMBER (kwota, liczba, powierzchnia), DATEPICKER (data), RADIO (jedna opcja z kratek), CHECKBOX (wiele opcji), SELECT (jedna opcja z listy > 5 opcji), FILE_UPLOADER (załącznik, dokument do dołączenia), TEXT_BLOCK (informacja dla użytkownika, bez wpisywania).
 - options: dla RADIO/CHECKBOX/SELECT dokładne nazwy opcji z formularza (bez numerów i kratek).
-- Lista kratek '☐' pod jednym nagłówkiem to JEDNO pole, a options to WSZYSTKIE jej pozycje w kolejności, choćby było ich kilkadziesiąt. Polecenie w liczbie mnogiej ("wskaż rodzaje", "wybierz ... z listy") lub brak ograniczenia do jednej kratki oznacza CHECKBOX, także dla długiej listy. Pozycja bez kratki z miejscem do wpisania (np. "Inny ____") to osobne pole TEXT_FIELD, nie opcja.
-- Lista wariantów po zdaniu typu "proszę:", "wybierz", "zaznacz" (np. "1) zaliczyć ... 2) zwrócić ...") to JEDNO pole RADIO z opcjami, nie osobne pola tekstowe. Pole do wpisania przy wariancie (np. "z tytułu ____") to osobne pole z visible_when na tę opcję.
+- Lista kratek '☐' pod jednym nagłówkiem to JEDNO pole, a options to WSZYSTKIE jej pozycje w kolejności, choćby było ich kilkadziesiąt. Każdy nagłówek z własną listą kratek to osobne pole; nie łącz list. Polecenie w liczbie mnogiej ("wskaż rodzaje", "wybierz ... z listy") lub brak ograniczenia do jednej kratki oznacza CHECKBOX, także dla długiej listy. Pozycja bez kratki z miejscem do wpisania (np. "Inny ____") to osobne pole TEXT_FIELD, nie opcja.
+- Lista wykluczających się wariantów po zdaniu typu "proszę:", "wybierz", "zaznacz" (np. "1) zaliczyć ... 2) zwrócić ...") to JEDNO pole RADIO z opcjami, nie osobne pola tekstowe. Pole do wpisania przy wariancie (np. "z tytułu ____") to osobne pole z visible_when na tę opcję.
 - required: false tylko, gdy formularz mówi "opcjonalnie", "jeżeli dotyczy", "nieobowiązkowe".
 - validator: EMAIL, PESEL, NIP, REGON, ZIP_CODE (kod pocztowy), EPUAP, ADE, SERIAL_NUMBER_ID_CARD lub "".
 - repeating: true, gdy sekcję wypełnia się dla wielu elementów (kilka osób, działek, pojazdów, nieruchomości).
@@ -54,6 +54,19 @@ Poprawny wynik (jedna sekcja, trzy pola):
     {{"label": "Wybierz, co mamy zrobić z nadpłatą", "kind": "RADIO", "options": ["Zaliczyć na poczet przyszłego zobowiązania podatkowego", "Zwrócić przelewem na rachunek bankowy"], "required": true}},
     {{"label": "Nazwa podatku", "kind": "TEXT_FIELD", "visible_when": {{"field_label": "Wybierz, co mamy zrobić z nadpłatą", "equals": "Zaliczyć na poczet przyszłego zobowiązania podatkowego"}}}},
     {{"label": "Numer rachunku", "kind": "TEXT_FIELD", "visible_when": {{"field_label": "Wybierz, co mamy zrobić z nadpłatą", "equals": "Zwrócić przelewem na rachunek bankowy"}}}}]}}
+PRZYKŁAD list wielokrotnego wyboru. Fragment tekstu:
+  Wskaż poziomy, a następnie wybierz języki z listy:
+  ☐ podstawowy
+  ☐ zaawansowany
+  Języki:
+  ☐ angielski
+  ☐ niemiecki
+  ☐ włoski
+  Inny język ____
+Poprawne pola (dwie listy CHECKBOX i osobne pole tekstowe):
+  {{"label": "Poziomy", "kind": "CHECKBOX", "options": ["Podstawowy", "Zaawansowany"]}},
+  {{"label": "Języki", "kind": "CHECKBOX", "options": ["Angielski", "Niemiecki", "Włoski"]}},
+  {{"label": "Inny język", "kind": "TEXT_FIELD", "required": false}}
 Lista załączników ("w załączeniu: 1) korekta deklaracji 2) ____") to osobne pola FILE_UPLOADER, po jednym na wymieniony dokument ("Plik korekty deklaracji"); nigdy RADIO. Puste pozycje "____" pomijaj.
 
 TEKST:
