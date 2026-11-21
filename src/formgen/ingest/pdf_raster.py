@@ -1,4 +1,4 @@
-"""Scanned PDF (no text layer): render pages with pypdfium2 (Apache/BSD) and OCR them."""
+"""PDF pages without a text layer: render them with pypdfium2 (Apache/BSD) and OCR them."""
 
 from __future__ import annotations
 
@@ -7,18 +7,20 @@ import io
 import pypdfium2 as pdfium
 
 from formgen.ingest.image import parse_image
-from formgen.ingest.model import Document, Page
+from formgen.ingest.model import Page
 
 
-def parse_scanned_pdf(data: bytes, lang: str = "pol", scale: float = 200 / 72) -> Document:
+def ocr_pdf_pages(data: bytes, numbers: list[int], lang: str = "pol", scale: float = 200 / 72) -> list[Page]:
+    """OCR the given 1-based page numbers; returns one Page per number, in order."""
     pdf = pdfium.PdfDocument(io.BytesIO(data))
     pages: list[Page] = []
-    for i in range(len(pdf)):
-        bitmap = pdf[i].render(scale=scale)
+    for n in numbers:
         buf = io.BytesIO()
-        bitmap.to_pil().save(buf, format="PNG")
-        doc = parse_image(buf.getvalue(), lang)
-        for p in doc.pages:
-            p.number = i + 1
-            pages.append(p)
-    return Document(pages=pages, source_kind="pdf", ocr=True)
+        pdf[n - 1].render(scale=scale).to_pil().save(buf, format="PNG")
+        ocr = parse_image(buf.getvalue(), lang).pages
+        page = ocr[0]
+        page.number = n
+        for extra in ocr[1:]:  # an unusually tall page split in two: keep it as one page
+            page.lines.extend(extra.lines)
+        pages.append(page)
+    return pages
