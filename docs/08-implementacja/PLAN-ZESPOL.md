@@ -6,13 +6,13 @@ status: implementacja
 
 # Plan pracy zespołu (od wieczora 21.11)
 
-Baza: PR #1 (`feat/pipeline-core`). Każdy strumień = osobny branch od `main` po merge PR #1, małe PR-y, squash merge.
+Gałęzie: `develop` = codzienna praca (domyślna), `main` = tylko stan pokazywany jury. Każdy strumień = osobny branch od `develop`, mały PR do `develop`, merge po zielonym CI (testy, ruff, dokumentacja). `develop` -> `main` tylko przez PR „release” po `scripts/verify_stack.sh`.
 Zasada: `make test` zielone przed każdym PR. Nowe zależności tylko open source bez copyleft, wpis w `docs/08-implementacja/LICENSES.md`.
 
-## Strumień 0. Merge i baza (30 min, osoba z prawami do repo)
-1. Napraw kontrolę dokumentacji: w `.gitattributes` dodaj `*.json -text`, uruchom `python3 scripts/material_manifest.py`, commit na `main`.
-2. Zmerguj PR #1.
-3. Każdy robi `git checkout main && git pull && python3 scripts/sync_materials.py && make test`.
+## Strumień 0. Merge i baza (zrobione 21.11)
+PR #1 i #2 na `main`, PR #3–#7 w `develop` (zintegrowane, 168 testów). CI uruchamia testy na każdym push i PR.
+Start pracy: `git checkout develop && git pull && python3 scripts/sync_materials.py && make test`.
+Dwie sesje agenta nigdy w jednym katalogu: `git worktree add ../formularze-<nazwa> develop`.
 
 ## Strumień A. Frontend (1–2 osoby, punkty IV + intuicyjność 20%)
 Spec: `docs/08-implementacja/FRONTEND-BRIEF.md`. Biblioteka JSONata już w `src/formgen/static/vendor/`.
@@ -51,6 +51,6 @@ Definicja ukończenia: ktoś spoza zespołu uruchamia stack z README na czystej 
 - Review PR-ów ze strumieni A–D.
 
 ## Zależności
-- A i B mogą ruszyć od razu na branchu PR #1 (nie czekać na merge).
+- A i B ruszają z `develop`.
 - C.2 i D.3–D.5 na końcu, po B.
-- Wszystko blokuje tylko strumień 0 dla wspólnego `main`.
+- Przed obroną: PR `develop -> main` (#8) po `verify_stack.sh` na x86.
