@@ -19,3 +19,9 @@ models/.cache/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+.venv
+
+# UI review tooling; vendor assets are rebuilt by `npm run ui:assets` (pinned in package-lock.json)
+test-results/
+playwright-report/
+src/formgen/static/review/vendor/

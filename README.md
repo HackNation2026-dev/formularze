@@ -69,6 +69,18 @@ Lokalnie bez Dockera (dev):
 .venv/bin/python -m pytest -q          # testy: golden JSON-y COI, composer, API
 ```
 
+## Interfejs przeglądu `/review/`
+
+Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON albo wysyła PDF do API. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
+
+```bash
+npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
+make run                         # http://localhost:8000/review/
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 13 testów Playwright (Chrome)
+```
+
+Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
+
 ## Konfiguracja
 
 Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
@@ -80,13 +92,13 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
 | `ALLOWED_EXTENSIONS` | pdf,doc,docx,ods,xlsx,jpg,jpeg,png | whitelist rozszerzeń (case-insensitive) |
 | `AUTH_ENABLED` | true | wymagaj JWT Bearer |
 | `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_LEEWAY_SECONDS` | –, HS256, –, –, 30 | weryfikacja tokenu |
-| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 300 | lokalny serwer llama.cpp (OpenAI-compatible) |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 600 | serwer zgodny z OpenAI z otwartym modelem: lokalny llama.cpp albo nasza chmura (`LLM_API_KEY`); `LLM_FALLBACK_BASE_URL` = lokalny zapas |
 | `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | tesseract / rapidocr / unlimited (sidecar GPU) |
 | `DOC_CONVERTER_URL` | – | Apache Tika dla `.doc` |
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
-| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 600, INFO | |
+| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | |
 
 ## REST API
 
@@ -98,6 +110,7 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 | `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
 | `GET /health`, `GET /ready` | – | liveness / readiness |
+| `GET /review/` | – (wywołania API z UI używają tokena Bearer) | interfejs przeglądu i symulacji |
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),
 `401 UNAUTHORIZED`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`, `415 MIME_MISMATCH` (zawartość sprawdzana
@@ -131,5 +144,6 @@ i przetwarzany według zawartości.
 - `src/formgen/api/` – FastAPI, walidacja uploadu, JWT, konfiguracja
 - `src/formgen/ingest/` – detekcja typu (magika), parsery formatów
 - `src/formgen/eval/` – metryka porównania z JSON-ami wzorcowymi
+- `src/formgen/static/review/` – interfejs przeglądu (bez frameworka, moduły ES); `tests/ui/` – testy Playwright
 - `docs/08-implementacja/` – PROBLEM, SPEC, analiza materiałów, research, architektura, licencje
 - `data/input/` – kopie robocze materiałów (tworzy `python3 scripts/sync_materials.py` z `docs/02-materialy/organizator`), `data/output/` – wygenerowane JSON-y dla 7 formularzy do oceny

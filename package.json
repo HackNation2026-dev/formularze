@@ -1,0 +1,17 @@
+{
+  "name": "formgen-review",
+  "private": true,
+  "scripts": {
+    "ui:assets": "node scripts/ui-assets.mjs",
+    "test:ui": "playwright test",
+    "check:ui": "node scripts/ui-assets.mjs --check && node --check src/formgen/static/review/app.mjs && node --check src/formgen/static/review/render.mjs && node --check src/formgen/static/review/conditions-worker.js && prettier --check src/formgen/static/review/*.{mjs,js,css,html} tests/ui/review.spec.cjs scripts/ui-assets.mjs playwright.config.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "prettier": "3.6.2"
+  },
+  "dependencies": {
+    "jsonata": "2.2.2",
+    "pdfjs-dist": "5.4.394"
+  }
+}

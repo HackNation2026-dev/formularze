@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import tempfile
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, Request, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from formgen import __version__, pipeline
 from formgen.api.errors import ApiError
@@ -97,6 +99,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "sample_unknown": sample_unknown,
         }
 
+    app.mount(
+        "/review",
+        StaticFiles(directory=Path(__file__).resolve().parents[1] / "static" / "review", html=True),
+        name="review",
+    )
     return app
 
 
