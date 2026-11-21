@@ -1,5 +1,5 @@
 ---
-wersja: 0.1.0
+wersja: 0.1.1
 aktualizacja: 2026-11-21
 status: dokumentacja przygotowawcza
 ---
@@ -26,3 +26,5 @@ Model/OCR i wszystkie zasoby potrzebne podczas analizy: lokalne
 Nie wymagamy dodatkowej bazy ani kolejki na etapie prototypu. Pliki użytkowników przetwarzaj tylko tymczasowo. Limity i błędy adapterów muszą być jawne. Zasoby modelu przygotuj przed pokazem; działanie aplikacji nie może zależeć od pobierania ich z sieci.
 
 Przed wyborem narzędzi do PDF i konwersji DOC sprawdź licencje komponentów i zależności. Popularność biblioteki nie potwierdza zgodności z wykluczeniem copyleft. Nie wskazano jeszcze zatwierdzonego zestawu bibliotek.
+
+Zobacz [pełną aplikację i wybór interfejsu](pelna-aplikacja.md).
