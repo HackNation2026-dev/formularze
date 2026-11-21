@@ -1,9 +1,14 @@
 import io
+import threading
+import time
 from pathlib import Path
 
+import anyio
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from formgen import pipeline
 from formgen.api.app import create_app
 from formgen.api.security import issue_token
 from formgen.api.settings import Settings
@@ -168,3 +173,61 @@ def test_llm_down_falls_back_to_heuristic():
     assert r.status_code == 200, r.text
     assert r.headers["X-Extractor"] == "HeuristicExtractor"
     assert len(r.json()["tabs"]) >= 3
+
+
+def _blocking_run(release: threading.Event):
+    def run(*_args, **_kwargs):
+        release.wait(timeout=10)
+        raise TimeoutError("released")
+
+    return run
+
+
+@pytest.mark.anyio
+async def test_health_answers_while_analyze_is_running(monkeypatch):
+    release = threading.Event()
+    monkeypatch.setattr(pipeline, "run", _blocking_run(release))
+    app = create_app(Settings(auth_enabled=False, extractor="stub", _env_file=None))
+    pdf = next(p for p in SAMPLE_FILES if p.suffix.lower() == ".pdf")
+    files = {"file": (pdf.name, pdf.read_bytes())}
+    async with (
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c,
+        anyio.create_task_group() as tg,
+    ):
+        t0 = time.perf_counter()
+        tg.start_soon(lambda: c.post("/api/v1/forms/analyze", files=files))
+        await anyio.sleep(0.2)
+        health = await c.get("/health")
+        elapsed = time.perf_counter() - t0
+        release.set()
+    assert health.status_code == 200
+    assert elapsed < 2.0, f"/health waited {elapsed:.1f}s behind a running analyze"
+
+
+def test_request_timeout_returns_504(monkeypatch):
+    release = threading.Event()
+    monkeypatch.setattr(pipeline, "run", _blocking_run(release))
+    s = Settings(auth_enabled=False, extractor="stub", request_timeout_seconds=1, _env_file=None)
+    pdf = next(p for p in SAMPLE_FILES if p.suffix.lower() == ".pdf")
+    t0 = time.perf_counter()
+    try:
+        r = TestClient(create_app(s)).post("/api/v1/forms/analyze", files={"file": (pdf.name, pdf.read_bytes())})
+    finally:
+        release.set()
+    assert r.status_code == 504 and r.json()["error"]["code"] == "PROCESSING_TIMEOUT"
+    assert time.perf_counter() - t0 < 5
+
+
+def test_ready_reports_unreachable_llm():
+    s = Settings(auth_enabled=False, extractor="llm", llm_base_url="http://127.0.0.1:9", _env_file=None)
+    r = TestClient(create_app(s)).get("/ready")
+    assert r.status_code == 200 and r.json()["status"] == "degraded" and r.json()["llm_alive"] is False
+
+    strict = s.model_copy(update={"llm_fallback_heuristic": False})
+    r = TestClient(create_app(strict)).get("/ready")
+    assert r.status_code == 503 and r.json()["status"] == "unavailable"
+
+
+def test_ready_without_llm_extractor_is_ok():
+    r = TestClient(create_app(Settings(auth_enabled=False, extractor="heuristic", _env_file=None))).get("/ready")
+    assert r.status_code == 200 and r.json()["status"] == "ok"

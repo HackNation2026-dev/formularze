@@ -1,6 +1,7 @@
 # runtime, pinned (R-12). Regenerate: .venv/bin/pip freeze | grep -f requirements.in
 fastapi==0.165.0
 starlette==1.10.0
+anyio==4.16.0
 uvicorn[standard]==0.54.0
 python-multipart==0.0.34
 pydantic==2.14.4
