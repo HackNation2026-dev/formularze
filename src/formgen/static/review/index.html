@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'"
+    />
+    <title>Weryfikacja formularza · COI</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="bootstrap.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <span class="eyebrow">COI / LOKALNY PRZEGLĄD</span>
+      <h1>Weryfikacja formularza</h1>
+      <p>
+        Porównaj źródło, sprawdź warianty i zapisz uwagi. Walidacja struktury
+        nie potwierdza kompletności treści.
+      </p>
+    </header>
+    <section class="toolbar" aria-label="Pliki i API">
+      <label
+        >PDF źródłowy<input
+          id="pdf-file"
+          disabled
+          type="file"
+          accept=".pdf,application/pdf"
+      /></label>
+      <label
+        >Konfiguracja JSON<input
+          id="json-file"
+          disabled
+          type="file"
+          accept=".json,application/json"
+      /></label>
+      <button id="analyze" disabled>Prześlij PDF do API</button>
+      <details>
+        <summary>Uwierzytelnianie API</summary>
+        <label
+          >Token Bearer<input
+            id="token"
+            type="password"
+            autocomplete="off"
+            spellcheck="false" /></label
+        ><small
+          >Token tylko w pamięci tej karty. API tego samego serwera.</small
+        >
+      </details>
+    </section>
+    <p id="status" role="status">
+      Wczytaj zapisany JSON i PDF. Model nie jest potrzebny do lokalnego
+      przeglądu.
+    </p>
+    <main class="workspace">
+      <section class="source" aria-label="Dokument źródłowy">
+        <h2>PDF źródłowy</h2>
+        <p id="pdf-name">Nie wczytano PDF.</p>
+        <div class="actions">
+          <button id="pdf-prev" disabled>Poprzednia strona PDF</button
+          ><span id="pdf-position"></span
+          ><button id="pdf-next" disabled>Następna strona PDF</button>
+        </div>
+        <div class="pdf-surface">
+          <canvas
+            id="pdf-canvas"
+            hidden
+            aria-label="Podgląd strony PDF"
+          ></canvas>
+        </div>
+        <details>
+          <summary>Tekst strony PDF</summary>
+          <p id="pdf-text" class="prose"></p>
+        </details>
+      </section>
+      <section class="configuration" aria-label="Konfiguracja formularza">
+        <div class="actions">
+          <button id="review-mode" aria-pressed="true">
+            Przegląd wszystkich pól</button
+          ><button id="simulate-mode" aria-pressed="false">Symulacja</button>
+        </div>
+        <p id="mode-help">
+          Przegląd pokazuje także pola ukrywane warunkowo. Odpowiedzi zmienisz w
+          symulacji.
+        </p>
+        <p id="provenance">Brak konfiguracji.</p>
+        <p id="digest" class="digest"></p>
+        <nav id="pages" aria-label="Strony formularza"></nav>
+        <div class="actions">
+          <button id="validate" disabled>Waliduj strukturę przez API</button
+          ><button id="export-json" disabled>Pobierz czysty JSON</button
+          ><button id="export-report" disabled>Pobierz raport uwag</button>
+        </div>
+        <p id="validation" role="status">
+          Walidacja struktury: nie uruchomiono.
+        </p>
+        <p id="condition-status" role="status"></p>
+        <div id="form">
+          <p class="empty">Zacznij od zapisanego JSON referencyjnego 05.</p>
+        </div>
+      </section>
+    </main>
+    <section class="annotations" aria-labelledby="notes-title">
+      <h2 id="notes-title">Raport uwag</h2>
+      <p>
+        Uwagi dotyczą bieżącego wyniku. Pobierz raport przed wczytaniem innej
+        konfiguracji. Odświeżenie karty usuwa uwagi.
+      </p>
+      <button id="missing" disabled>Zgłoś brakującą informację</button>
+      <form id="note-form" hidden>
+        <h3 id="note-target"></h3>
+        <label
+          >Miejsce w PDF lub opis informacji<input
+            id="note-location"
+            maxlength="500"
+        /></label>
+        <label
+          >Treść uwagi<textarea
+            id="note-text"
+            required
+            maxlength="5000"
+            rows="3"
+          ></textarea>
+        </label>
+        <button>Zapisz uwagę</button
+        ><button id="cancel-note" type="button">Anuluj</button>
+      </form>
+      <ol id="notes"></ol>
+    </section>
+    <footer>
+      Podgląd lokalny · Rejestry niepodłączone · Odpowiedzi symulacji nie
+      trafiają do konfiguracji COI.
+    </footer>
+  </body>
+</html>

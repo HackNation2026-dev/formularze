@@ -69,6 +69,18 @@ Lokalnie bez Dockera (dev):
 .venv/bin/python -m pytest -q          # testy: golden JSON-y COI, composer, API
 ```
 
+## Interfejs przeglądu `/review/`
+
+Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON albo wysyła PDF do API. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
+
+```bash
+npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
+make run                         # http://localhost:8000/review/
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 13 testów Playwright (Chrome)
+```
+
+Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
+
 ## Konfiguracja
 
 Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
@@ -98,6 +110,7 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 | `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
 | `GET /health`, `GET /ready` | – | liveness / readiness |
+| `GET /review/` | – (wywołania API z UI używają tokena Bearer) | interfejs przeglądu i symulacji |
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),
 `401 UNAUTHORIZED`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`, `415 MIME_MISMATCH` (zawartość sprawdzana
@@ -131,5 +144,6 @@ i przetwarzany według zawartości.
 - `src/formgen/api/` – FastAPI, walidacja uploadu, JWT, konfiguracja
 - `src/formgen/ingest/` – detekcja typu (magika), parsery formatów
 - `src/formgen/eval/` – metryka porównania z JSON-ami wzorcowymi
+- `src/formgen/static/review/` – interfejs przeglądu (bez frameworka, moduły ES); `tests/ui/` – testy Playwright
 - `docs/08-implementacja/` – PROBLEM, SPEC, analiza materiałów, research, architektura, licencje
 - `data/input/` – kopie robocze materiałów (tworzy `python3 scripts/sync_materials.py` z `docs/02-materialy/organizator`), `data/output/` – wygenerowane JSON-y dla 7 formularzy do oceny

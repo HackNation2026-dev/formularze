@@ -9,3 +9,4 @@ deliverables
 .ruff_cache
 .env
 models
+node_modules
