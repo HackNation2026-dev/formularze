@@ -1,6 +1,6 @@
 ---
 wersja: 0.5.0
-aktualizacja: 2026-11-22 08:45
+aktualizacja: 2026-11-22 09:10
 status: stan na ostatnie godziny przed zgłoszeniem
 ---
 
@@ -14,7 +14,7 @@ czego brakuje, kto co robi teraz. Termin zgłoszenia: potwierdź na Discordzie (
 | Co | Gdzie |
 |---|---|
 | Repo zespołu | `HackNation2026-dev/formularze`, klon `~/.t3/projects/formularze` |
-| Stan dla jury | gałąź `main` = `7e9dd2b` (release #47), `verify_stack.sh` 15/15 na x86 CPU; następny release po wsadzie i verify (sesja D) |
+| Stan dla jury | gałąź `main` = `d160744` (release #60, 22.11 09:05) == `develop`; `verify_stack.sh` 15/15 na x86 CPU dla backendu `d3f0b65` (analyze 85 s). Zawiera też GUI `apps/web` (Next.js, PR #59 Kacpra, poza Dockerem backendu). **`main` zamrożony do 11:00.** |
 | Praca bieżąca | gałąź `develop`: po 08:15 ma #48/#49/#52 (CPU 05: 207 s -> 122 s), #51 (ten dokument), #53 (README Zgłoszenie), #54 (architektura zgodna z kodem) |
 | Stary katalog scratch | `~/.t3/projects/hacknation-cyfr-forumla` – bez remote, kod rozjechany, **nie pracuj tam**. Projekt T3 wskazuje ten katalog, stąd nowe sesje lądują w złym repo. Przepnij projekt T3 na `~/.t3/projects/formularze`. |
 | Serwer demo (GPU) | Legion, `llmsrv` (Qwen3.5-4B, port 18081), tunel Cloudflare `cfl`, URL zmienia się po restarcie: `docker logs cfl` |
@@ -55,7 +55,7 @@ Zgłoszenie formalne:
 |---|---|
 | PR #48, #49, #50 (CPU: checkpointy, prefill prefiksów, 2 równoległe wywołania; 05 na CPU 207 s -> 122 s) | ZMERGOWANE 08:00 (#50 jako #52 po rebase). Czeka `verify_stack.sh` i release. |
 | PR #20 (blind_eval, testy czerwone) | Nie blokuje. Autor naprawia testy albo zamykamy po konkursie. |
-| `origin/feat/gui-next` (nowy frontend, 20 k linii, bez PR, bez weryfikacji) | NIE wchodzi do stanu jury. Demo pokazuje `/review/`. Autor może pokazać osobno jako „dalszy rozwój”. |
+| GUI `apps/web` (Next.js, PR #59) | Weszło do `main` bezpośrednio o 08:18 (poza procesem). Zostaje: nie dotyka backendu, Dockera ani `compose.yaml` (Docker kopiuje tylko `src/`). Demo backendu pokazuje `/review/`; GUI pokazuje jego autor. |
 | Issue #35–#39 (graf zadań z osieroconego sprintu) | ZAMKNIĘTE 08:00; zostaje #40 jako lista odbioru. |
 | Kontener `llm-exp` (Qwen3.5-2B) na Legionie | ZATRZYMANY 08:00. |
 | 13 worktree i gałęzie `perf/*`, `fix/*` lokalnie | Po konkursie. Teraz nie dotykać. |
@@ -99,6 +99,13 @@ Kolejność na Legionie jest szeregowa, bo CPU i GPU dzielą 12 GB RAM: najpierw
 ## 4a. Audyt „czy coś się zgubiło” (08:10)
 
 Porównano stary katalog scratch, gałęzie `impl/*`, `sprint-90-pkt` i niezmergowane gałęzie zespołu z `develop`. Nic nie musi wejść przed 11:00. Po konkursie warto przenieść: filtry anty-wyciekowe i neutralne prompty ekstrakcji (sprint), podział kolumn w `ingest/layout.py`, endpoint propozycji słowników z panelem w UI, pełniejszą edycję in-place (`edit.mjs`), upload pojedynczego pliku w 8 formatach z podglądem w `/review/`, rozszerzenie `.jpe`, panel diagnostyczny Gradio (scratch `main`). Gałąź `perf/indexed-extraction` zamknięta celowo (SCORE spadł).
+
+## 4b. Co zostało do 11:00 (stan 09:10)
+
+1. Slajdy (Figma, człowiek) z treści `docs/06-prezentacja/SLAJDY-I-FILM.md`; liczby z README „Pomiary”.
+2. Film 3 min (człowiek) według minutażu w tym samym pliku. Stack demo: Legion `http://100.111.226.49:8000/review/` (token z `scripts/make_token.py` albo `AUTH_ENABLED=false` lokalnie: `AUTH_ENABLED=false make run`).
+3. Wgranie PDF slajdów i linku do filmu do `docs/06-prezentacja/`, PR do `develop`, mini-release do `main`.
+4. Formularz zgłoszenia: tytuł i opis z README „Zgłoszenie”, link do repo (`main`), `data/output/`.
 
 ## 5. Czego NIE robimy przed zgłoszeniem
 
