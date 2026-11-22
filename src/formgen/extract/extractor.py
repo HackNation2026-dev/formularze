@@ -212,7 +212,9 @@ def to_spec(
                 dropped.append(f"bad-line:{f.line}")
                 continue
             label = _label(f, lines)  # per field: one line may carry several ("w miejscowości ____ przy ulicy ____")
-            if not re.search(r"[^\W_]{2,}", clean(lines[f.line])) or not re.search(r"[^\W_]{2,}", label):
+            if not re.search(r"[^\W_]{2,}", label) or not (
+                re.search(r"[^\W_]{2,}", clean(lines[f.line])) or _labels_neighbour(f, lines)
+            ):
                 dropped.append(f"empty-line:{f.line}")  # no real word: '', '____', '...', '-'
                 continue
             if ADDRESS_VALUE_RE.search(lines[f.line]):
@@ -360,6 +362,12 @@ def _label(f: LlmField, lines: Lines) -> str:
     """The override when the source supports it, else the cleaned line text."""
     override = f.label.strip().rstrip(":").strip()
     return override if override and grounded(override, " ".join(lines.values())) else clean(lines[f.line])
+
+
+def _labels_neighbour(f: LlmField, lines: Lines) -> bool:
+    """A fill-only line ('____') right under or over the line its override names: the model pointed at the fill."""
+    near = " ".join(lines.get(n, "") for n in (f.line - 1, f.line + 1))
+    return bool(f.label.strip()) and bool(near.strip()) and grounded(f.label, near)
 
 
 def _cond(c: LlmCondition | None, labels: dict[int, str], lines: Lines) -> list[Condition]:

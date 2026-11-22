@@ -560,3 +560,20 @@ def test_two_fields_on_one_line_keep_their_own_labels():
     spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
     labels = [f.label for f in spec.pages[0].sections[0].fields]
     assert labels == ["Miejscowość", "Ulica", "Numer ewidencyjny działki", "Obręb"]
+
+
+def test_fill_only_line_next_to_the_override_text_keeps_the_field():
+    lines = {1: "nr ewidencyjny działki", 2: "____", 3: "(podpis)", 4: "____"}
+    secs = chunk(
+        lines,
+        LlmSection(
+            page_title="P",
+            title="Lokalizacja budynku",
+            fields=[
+                LlmField(line=2, label="Nr ewidencyjny działki"),
+                LlmField(line=4, label="Numer księgi wieczystej"),
+            ],
+        ),
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
+    assert [f.label for f in spec.pages[0].sections[0].fields] == ["Nr ewidencyjny działki"]
