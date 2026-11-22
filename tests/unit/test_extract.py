@@ -10,11 +10,24 @@ from formgen.extract.schema import LlmChunk, LlmCondition, LlmField, LlmGlobal, 
 from formgen.ingest import Document, Line, Page
 from formgen.schema import Severity, check_rules
 
-SOURCE = """## WNIOSEK o stwierdzenie nadpłaty podatku
-wnoszę o stwierdzenie nadpłaty z tytułu ____ w kwocie ____ (rodzaj podatku)
-Uzasadnienie: ____
-Kwotę nadpłaty proszę: 1) zaliczyć na poczet przyszłego zobowiązania podatkowego z tytułu ____ 2) zwrócić przelewem na wskazany rachunek
-w załączeniu: 1) korekta deklaracji"""
+LINES = {
+    1: "## WNIOSEK o stwierdzenie nadpłaty podatku",
+    2: "Rodzaj podatku ____",
+    3: "Kwota nadpłaty ____",
+    4: "Uzasadnienie: ____",
+    5: "Imię i nazwisko ____",
+    6: "Kwotę nadpłaty proszę:",
+    7: "☐ 1) zaliczyć na poczet przyszłego zobowiązania podatkowego z tytułu ____",
+    8: "☐ 2) zwrócić przelewem na wskazany rachunek",
+    9: "Numer rachunku ____",
+    10: "w załączeniu: 1) korekta deklaracji",
+    11: "____",
+}
+SOURCE = "\n".join(LINES.values())
+
+
+def chunk(lines, *secs):
+    return [(s, lines) for s in secs]
 
 
 def _llm_output():
@@ -25,56 +38,86 @@ def _llm_output():
         applicant_other_person=True,
         applicant_legal_entity=True,
     )
-    secs = [
+    secs = chunk(
+        LINES,
         LlmSection(
             page_title="Informacje o nadpłacie",
             title="Informacje o nadpłacie",
             fields=[
-                LlmField(label="Rodzaj podatku"),
-                LlmField(label="Kwota nadpłaty", kind="NUMBER"),
-                LlmField(label="Uzasadnienie", kind="TEXTAREA"),
-                LlmField(label="Imię i nazwisko"),  # template -> dropped
-                LlmField(label="Numer księgi wieczystej"),  # hallucinated -> dropped
+                LlmField(line=2),
+                LlmField(line=3, kind="NUMBER"),
+                LlmField(line=4, kind="TEXTAREA"),
+                LlmField(line=5),  # template -> dropped
+                LlmField(line=42),  # outside the chunk -> dropped
+                LlmField(line=11, label="Numer księgi wieczystej"),  # fill-only line -> dropped
             ],
         ),
         LlmSection(
             page_title="Informacje o nadpłacie",
             title="Rozliczenie nadpłaty",
             fields=[
-                LlmField(
-                    label="Co zrobić z nadpłatą",
-                    kind="RADIO",
-                    options=[
-                        "Zaliczyć na poczet przyszłego zobowiązania podatkowego",
-                        "Zwrócić przelewem na wskazany rachunek",
-                    ],
-                ),
-                LlmField(
-                    label="Numer rachunku",
-                    visible_when=LlmCondition(
-                        field_label="Co zrobić z nadpłatą", equals="Zwrócić przelewem na wskazany rachunek"
-                    ),
-                ),
+                LlmField(line=6, label="Co zrobić z nadpłatą", kind="RADIO", option_lines=[7, 8]),
+                LlmField(line=9, visible_when=LlmCondition(field_line=6, option_line=8)),
             ],
         ),
         LlmSection(
             page_title="Załączniki",
             title="Załączniki",
-            fields=[LlmField(label="Korekta deklaracji", kind="FILE_UPLOADER")],
+            fields=[LlmField(line=10, label="Korekta deklaracji", kind="FILE_UPLOADER")],
         ),
-    ]
+    )
     return g, secs
 
 
-def test_to_spec_drops_template_and_ungrounded_fields():
+def test_to_spec_resolves_lines_and_drops_template_out_of_range_and_fill_only_lines():
     g, secs = _llm_output()
     spec = to_spec(g, secs, SOURCE, with_validators=True)
-    labels = [f.label for p in spec.pages for s in p.sections for f in s.fields]
-    assert "Imię i nazwisko" not in labels
-    assert "Numer księgi wieczystej" not in labels
-    assert "Rodzaj podatku" in labels and "Korekta deklaracji" in labels
+    fields = [f for p in spec.pages for s in p.sections for f in s.fields]
+    assert [f.label for f in fields] == [
+        "Rodzaj podatku",
+        "Kwota nadpłaty",
+        "Uzasadnienie",
+        "Co zrobić z nadpłatą",
+        "Numer rachunku",
+        "Korekta deklaracji",
+    ]
+    choice = fields[3]
+    assert choice.options == [
+        "Zaliczyć na poczet przyszłego zobowiązania podatkowego z tytułu",
+        "Zwrócić przelewem na wskazany rachunek",
+    ]
+    assert [(c.field, c.value) for c in fields[4].visible_when] == [
+        ("Co zrobić z nadpłatą", "Zwrócić przelewem na wskazany rachunek")
+    ]
     assert [p.title for p in spec.pages] == ["Informacje o nadpłacie", "Załączniki"]
-    assert spec.applicant.legal_entity and spec.applicant.other_person
+
+
+def test_ungrounded_label_override_falls_back_to_line_text():
+    lines = {1: "3. Powierzchnia działki (m2): ____"}
+    secs = chunk(
+        lines, LlmSection(page_title="P", title="S", fields=[LlmField(line=1, label="Numer księgi wieczystej")])
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, lines[1], with_validators=True)
+    assert spec.pages[0].sections[0].fields[0].label == "Powierzchnia działki (m2)"
+
+
+@pytest.mark.parametrize(
+    ("line", "text"),
+    [
+        ("## B.2 DANE NIERUCHOMOŚCI", "DANE NIERUCHOMOŚCI"),
+        ("☐ 1) zaliczyć na poczet ____", "Zaliczyć na poczet"),
+        ("a. Rodzaj podatku:", "Rodzaj podatku"),
+        ("2.1) teren", "Teren"),
+        ("Kwota | ____ |", "Kwota"),
+        ("W przypadku zwrotu", "W przypadku zwrotu"),
+        ("____ ☐", ""),
+        ("2) ____", ""),
+    ],
+)
+def test_clean_strips_markup_from_source_lines(line, text):
+    from formgen.extract.extractor import clean
+
+    assert clean(line) == text
 
 
 def test_to_spec_composes_valid_form_with_dependency():
@@ -145,18 +188,16 @@ def test_to_spec_applicant_from_text_overrides_llm():
 
 def test_to_spec_dedupes_labels_and_fixes_optionless_choice():
     g = LlmGlobal(title="x")
-    secs = [
+    lines = {1: "Rodzaj podatku ____", 2: "Rodzaj podatku:", 3: "w załączeniu: 1) korekta deklaracji"}
+    secs = chunk(
+        lines,
         LlmSection(
             page_title="P",
             title="S",
-            fields=[
-                LlmField(label="Rodzaj podatku"),
-                LlmField(label="Rodzaj podatku"),
-                LlmField(label="Załączniki", kind="CHECKBOX"),
-            ],
-        )
-    ]
-    spec = to_spec(g, secs, "Rodzaj podatku ____ w załączeniu: 1) korekta deklaracji", with_validators=True)
+            fields=[LlmField(line=1), LlmField(line=2), LlmField(line=3, label="Załączniki", kind="CHECKBOX")],
+        ),
+    )
+    spec = to_spec(g, secs, "\n".join(lines.values()), with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [f.label for f in fields] == ["Rodzaj podatku", "Załączniki"]
     assert fields[1].kind == "FILE_UPLOADER"
@@ -172,20 +213,20 @@ def test_address_labels_kept_in_subject_sections_but_dropped_for_applicant():
 
 def test_attachment_radio_becomes_file_uploaders_and_sections_merge():
     g = LlmGlobal(title="x")
-    secs = [
-        LlmSection(
-            page_title="P",
-            title="Załączniki",
-            fields=[LlmField(label="Wybierz załącznik", kind="RADIO", options=["Korekta deklaracji", "____"])],
-        ),
-        LlmSection(page_title="P", title="Rozliczenie", fields=[LlmField(label="Kwota", kind="NUMBER")]),
-        LlmSection(
-            page_title="P",
-            title="Rozliczenie",
-            fields=[LlmField(label="Kwota", kind="NUMBER"), LlmField(label="Numer rachunku")],
-        ),
-    ]
-    spec = to_spec(g, secs, "w załączeniu: korekta deklaracji; Kwota ____; Numer rachunku ____", with_validators=True)
+    lines = {
+        1: "Wybierz załącznik:",
+        2: "1) korekta deklaracji",
+        3: "2) ____",
+        4: "Kwota ____",
+        5: "Numer rachunku ____",
+    }
+    secs = chunk(
+        lines,
+        LlmSection(page_title="P", title="Załączniki", fields=[LlmField(line=1, kind="RADIO", option_lines=[2, 3])]),
+        LlmSection(page_title="P", title="Rozliczenie", fields=[LlmField(line=4, kind="NUMBER")]),
+        LlmSection(page_title="P", title="Rozliczenie", fields=[LlmField(line=4, kind="NUMBER"), LlmField(line=5)]),
+    )
+    spec = to_spec(g, secs, "\n".join(lines.values()), with_validators=True)
     secs_out = spec.pages[0].sections
     assert [s.title for s in secs_out] == ["Załączniki", "Rozliczenie"]
     assert [(f.label, f.kind) for f in secs_out[0].fields] == [("Korekta deklaracji", "FILE_UPLOADER")]
@@ -194,36 +235,27 @@ def test_attachment_radio_becomes_file_uploaders_and_sections_merge():
 
 def test_consent_sections_go_to_contact_page_and_choice_labels_stay_radio():
     g = LlmGlobal(title="x")
-    secs = [
-        LlmSection(page_title="P", title="Zgody i oświadczenia", fields=[LlmField(label="Zgoda na warunki wynajmu")]),
-        LlmSection(
-            page_title="P",
-            title="Rodzaj",
-            fields=[LlmField(label="Rodzaj zaświadczenia", kind="RADIO", options=["o dochodach", "o niezaleganiu"])],
-        ),
-    ]
-    spec = to_spec(
-        g, secs, "Zgoda na warunki wynajmu; Rodzaj zaświadczenia: o dochodach, o niezaleganiu", with_validators=True
+    lines = {1: "☐ Zgoda na warunki wynajmu", 2: "Rodzaj zaświadczenia:", 3: "☐ o dochodach", 4: "☐ o niezaleganiu"}
+    secs = chunk(
+        lines,
+        LlmSection(page_title="P", title="Zgody i oświadczenia", fields=[LlmField(line=1)]),
+        LlmSection(page_title="P", title="Rodzaj", fields=[LlmField(line=2, kind="RADIO", option_lines=[3, 4])]),
     )
+    spec = to_spec(g, secs, "\n".join(lines.values()), with_validators=True)
     assert spec.extra_consents == [("Zgoda na warunki wynajmu", True)]
     f = spec.pages[0].sections[0].fields[0]
-    assert f.kind == "RADIO" and len(f.options) == 2
+    assert f.kind == "RADIO" and f.options == ["O dochodach", "O niezaleganiu"]
 
 
 def test_noise_sections_empty_labels_dropped_and_pages_capped():
     from formgen.extract.extractor import MAX_SUBJECT_PAGES
 
     g = LlmGlobal(title="x")
-    secs = [
-        LlmSection(page_title=f"Strona {i}", title=f"Sekcja {i}", fields=[LlmField(label=f"Pole {i}")])
-        for i in range(9)
-    ]
-    secs.append(LlmSection(page_title="Wyjaśnienia", title="Objaśnienia", fields=[LlmField(label="Pole 1")]))
-    secs.append(
-        LlmSection(page_title="Strona 0", title="Sekcja 0", fields=[LlmField(label=" "), LlmField(label="Pole 1")])
-    )
-    src = " ".join(f"Pole {i} ____" for i in range(9))
-    spec = to_spec(g, secs, src, with_validators=True)
+    lines = {i + 1: f"Pole {i} ____" for i in range(9)} | {10: " "}
+    secs = [LlmSection(page_title=f"Strona {i}", title=f"Sekcja {i}", fields=[LlmField(line=i + 1)]) for i in range(9)]
+    secs.append(LlmSection(page_title="Wyjaśnienia", title="Objaśnienia", fields=[LlmField(line=2)]))
+    secs.append(LlmSection(page_title="Strona 0", title="Sekcja 0", fields=[LlmField(line=10), LlmField(line=2)]))
+    spec = to_spec(g, chunk(lines, *secs), "\n".join(lines.values()), with_validators=True)
     assert len(spec.pages) == MAX_SUBJECT_PAGES
     assert sum(len(s.fields) for p in spec.pages for s in p.sections) == 10  # 9 + 'Pole 1' merged into Sekcja 0
     assert not any(s.title == "Objaśnienia" for p in spec.pages for s in p.sections)
@@ -244,7 +276,7 @@ def test_invalid_chunk_is_split_then_skipped_not_fatal():
                 return LlmGlobal(title="Wniosek testowy")
             if "DRUGA" in user and len(self.calls) < 4:
                 raise ValueError("LLM returned invalid LlmChunk: truncated")
-            return LlmChunk(sections=[LlmSection(page_title="P", title="S", fields=[LlmField(label="Pole A")])])
+            return LlmChunk(sections=[LlmSection(page_title="P", title="S", fields=[LlmField(line=1)])])
 
     lines = [Line("Pole A ____", top=i) for i in range(40)] + [Line("DRUGA część ____", top=100)] * 60
     doc = Document(pages=[Page(number=1, lines=lines)])
@@ -289,18 +321,16 @@ def test_chunk_answer_budget_fills_free_context_and_oversize_prompt_is_split_bef
 
 def test_yes_no_attachment_radio_stays_radio_and_dash_labels_dropped():
     g = LlmGlobal(title="x")
-    secs = [
+    lines = {1: "Załącznik A", 2: "☐ TAK", 3: "☐ NIE", 4: "____", 5: "-"}
+    secs = chunk(
+        lines,
         LlmSection(
             page_title="P",
             title="Załączniki",
-            fields=[
-                LlmField(label="Załącznik A", kind="RADIO", options=["TAK", "NIE"]),
-                LlmField(label="____"),
-                LlmField(label="-"),
-            ],
-        )
-    ]
-    spec = to_spec(g, secs, "Załącznik A TAK NIE", with_validators=True)
+            fields=[LlmField(line=1, kind="RADIO", option_lines=[2, 3]), LlmField(line=4), LlmField(line=5)],
+        ),
+    )
+    spec = to_spec(g, secs, "\n".join(lines.values()), with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [(f.label, f.kind) for f in fields] == [("Załącznik A", "RADIO")]
 
@@ -316,11 +346,10 @@ def test_llm_address_like_labels_get_dictionaries():
     assert dictionary_for("Numer kierunkowy") == "Numery kierunkowe"
     assert dictionary_for("Rodzaj podatku") is None
     g = LlmGlobal(title="x")
-    secs = [
-        LlmSection(
-            page_title="P", title="Lokalizacja budynku", fields=[LlmField(label="Miejscowość"), LlmField(label="Gmina")]
-        )
-    ]
+    lines = {1: "Miejscowość ____", 2: "Gmina ____"}
+    secs = chunk(
+        lines, LlmSection(page_title="P", title="Lokalizacja budynku", fields=[LlmField(line=1), LlmField(line=2)])
+    )
     spec = to_spec(g, secs, "Miejscowość ____ Gmina ____", with_validators=True)
     fields = spec.pages[0].sections[0].fields
     assert [(f.kind, f.dictionary) for f in fields] == [("SELECT", "Miejscowość"), ("SELECT", "Gmina")]
@@ -373,20 +402,19 @@ BREEDS = [
 
 def test_llm_field_matching_proposed_dictionary_gets_its_options_and_passes_rules():
     g = LlmGlobal(title="Wniosek o zezwolenie na utrzymywanie psa")
-    secs = [
+    lines = {1: "Rasa psa ____", 2: "Rodzaj podatku", 3: "☐ podatek rolny", 4: "☐ podatek leśny"}
+    secs = chunk(
+        lines,
         LlmSection(
             page_title="Dane psa",
             title="Dane psa",
-            fields=[
-                LlmField(label="Rasa psa", kind="TEXT_FIELD"),
-                LlmField(label="Rodzaj podatku", kind="RADIO", options=["podatek rolny", "podatek leśny"]),
-            ],
-        )
-    ]
+            fields=[LlmField(line=1, kind="TEXT_FIELD"), LlmField(line=2, kind="RADIO", option_lines=[3, 4])],
+        ),
+    )
     spec = to_spec(g, secs, "Rasa psa ____ Rodzaj podatku ☐ podatek rolny ☐ podatek leśny", with_validators=True)
     rasa, podatek = spec.pages[0].sections[0].fields
     assert (rasa.kind, rasa.options, rasa.dictionary) == ("SELECT", BREEDS, None)
-    assert (podatek.kind, podatek.options) == ("RADIO", ["podatek rolny", "podatek leśny"])
+    assert (podatek.kind, podatek.options) == ("RADIO", ["Podatek rolny", "Podatek leśny"])
     form = compose(spec)
     assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
     out = next(f for _, f in form.iter_fields() if f.title == "Rasa psa")

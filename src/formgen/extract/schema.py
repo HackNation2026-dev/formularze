@@ -15,14 +15,17 @@ ValidatorName = Literal["", "EMAIL", "PESEL", "NIP", "REGON", "ZIP_CODE", "EPUAP
 
 
 class LlmCondition(BaseModel):
-    field_label: str = ""
-    equals: str = ""
+    field_line: int = 0  # line of the controlling RADIO/CHECKBOX/SELECT field
+    option_line: int = 0  # line of the option that shows this field or section
 
 
 class LlmField(BaseModel):
-    label: str
+    """Points at numbered source lines; code resolves the text, so the model never re-types labels or options."""
+
+    line: int
+    label: str = ""  # override, only when the line text is not a usable label
     kind: Kind = "TEXT_FIELD"
-    options: list[str] = Field(default_factory=list)
+    option_lines: list[int] = Field(default_factory=list)
     required: bool = True
     validator: ValidatorName = ""
     description: str = ""

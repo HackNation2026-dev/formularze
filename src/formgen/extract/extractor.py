@@ -12,11 +12,13 @@ from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec,
 from formgen.config import Settings
 from formgen.extract.llm_client import LlmClient, make_client
 from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER, SYSTEM
-from formgen.extract.schema import LlmChunk, LlmGlobal, LlmSection
+from formgen.extract.schema import LlmChunk, LlmCondition, LlmField, LlmGlobal, LlmSection
 from formgen.ingest import Document, load
 from formgen.schema.model import FieldType, Validator
 
 log = logging.getLogger("formgen.extract")
+
+Lines = dict[int, str]  # numbered source line -> its text (Document.numbered_lines)
 
 CHUNK_CHARS = 4500  # ~1.5k tokens of Polish text per call; keeps each answer short enough for a 12 tok/s box
 # Qwen3.5 reads Polish form text at 2.8-3.2 chars per token; 2.5 overestimates the prompt, so the answer budget
@@ -85,9 +87,9 @@ class LlmExtractor:
         client = self.client or make_client(settings)
         full = doc.to_prompt_text()
         g = client.complete(SYSTEM, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, max_tokens=512)
-        sections: list[LlmSection] = []
-        for pages, text in chunks(doc):
-            sections.extend(self._sections_for(client, pages, text, settings.llm_context_tokens))
+        sections: list[tuple[LlmSection, Lines]] = []
+        for pages, text, lines in chunks(doc):
+            sections.extend((s, lines) for s in self._sections_for(client, pages, text, settings.llm_context_tokens))
         spec = to_spec(g, sections, full, with_validators=settings.with_validators)
         if not spec.title.strip():
             spec.title = filename.rsplit(".", 1)[0]
@@ -121,20 +123,36 @@ def answer_budget(prompt: str, context_tokens: int) -> int:
     return context_tokens - int(len(prompt) / CHARS_PER_TOKEN) - TEMPLATE_TOKENS
 
 
-def chunks(doc: Document) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
-    cur_pages: list[int] = []
-    cur = ""
+def chunks(doc: Document) -> list[tuple[str, str, Lines]]:
+    """Page groups of about CHUNK_CHARS (measured without line numbers): (label, numbered text, its lines)."""
+    groups: list[list[int]] = []
+    size = 0
     for p in doc.pages:
-        t = doc.to_prompt_text([p.number])
-        if cur and len(cur) + len(t) > CHUNK_CHARS:
-            out.append((f"strony {cur_pages[0]}-{cur_pages[-1]}", cur))
-            cur_pages, cur = [], ""
-        cur_pages.append(p.number)
-        cur += ("\n" if cur else "") + t
-    if cur:
-        out.append((f"strony {cur_pages[0]}-{cur_pages[-1]}", cur))
-    return out
+        n = len(doc.to_prompt_text([p.number]))
+        if groups and size + n > CHUNK_CHARS:
+            groups.append([])
+            size = 0
+        if not groups:
+            groups.append([])
+        groups[-1].append(p.number)
+        size += n + 1
+    return [(f"strony {g[0]}-{g[-1]}", doc.to_prompt_text(g, numbered=True), doc.numbered_lines(g)) for g in groups]
+
+
+ENUM_PREFIX_RE = re.compile(
+    r"^(\d{1,2}(\.\d{1,2})*[\)\.]|[A-Z](\.\d{1,2})+[\)\.]?|[A-Z]\d{1,2}[\)\.]?|[a-zA-Z][\)\.]|[IVX]{1,4}\.)(\s+|$)"
+)
+
+
+def clean(text: str) -> str:
+    """Source line -> label or option text: no '## ', boxes, enumeration, fills, table pipes or trailing ':'."""
+    t = text.replace("## ", " ").replace("☐", " ").replace("☑", " ").replace("____", " ")
+    t = " ".join(c.strip() for c in t.split("|") if c.strip())
+    t = re.sub(r"\s+", " ", t).strip()
+    while (stripped := ENUM_PREFIX_RE.sub("", t)) != t:
+        t = stripped
+    t = t.strip(" :;,.-–")
+    return t[:1].upper() + t[1:]
 
 
 def grounded(label: str, text: str) -> bool:
@@ -154,11 +172,15 @@ def is_template_label(label: str, section_title: str = "") -> bool:
     return any(k in low for k in ADDRESS_LABELS) and bool(APPLICANT_SECTION_RE.search(section_title))
 
 
-def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_validators: bool) -> FormSpec:
+def to_spec(
+    g: LlmGlobal, sections: list[tuple[LlmSection, Lines]], source_text: str, *, with_validators: bool
+) -> FormSpec:
+    """Each section comes with its chunk's numbered lines; a field whose line is outside them is dropped."""
     pages: dict[str, PageSpec] = {}
     dropped: list[str] = []
     extra_consents: list[tuple[str, bool]] = []
-    for s in sections:
+    labels = {f.line: _label(f, lines) for s, lines in sections for f in s.fields if f.line in lines}
+    for s, lines in sections:
         if (
             NOISE_SECTION_RE.search(s.title)
             or NOISE_SECTION_RE.search(s.page_title)
@@ -167,54 +189,47 @@ def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_
             dropped.append(f"noise-section:{s.title}")
             continue
         if CONSENT_SECTION_RE.search(s.title.strip()):
-            for f in s.fields:
-                if grounded(f.label, source_text):
-                    extra_consents.append((f.label.strip().rstrip(":"), f.required))
+            extra_consents.extend((labels[f.line], f.required) for f in s.fields if labels.get(f.line))
             continue
         fields: list[FieldSpec] = []
         for f in s.fields:
-            if not re.search(r"[^\W_]{2,}", f.label):  # no real word: '', '____', '...', '-'
-                dropped.append(f"empty-label:{f.label!r}")
+            if f.line not in lines:
+                dropped.append(f"bad-line:{f.line}")
                 continue
-            if is_template_label(f.label, s.title) and f.kind not in ("FILE_UPLOADER",):
-                dropped.append(f"template:{f.label}")
+            label = labels[f.line]
+            if not re.search(r"[^\W_]{2,}", clean(lines[f.line])) or not re.search(r"[^\W_]{2,}", label):
+                dropped.append(f"empty-line:{f.line}")  # no real word: '', '____', '...', '-'
                 continue
-            if not grounded(f.label, source_text):
-                dropped.append(f"ungrounded:{f.label}")
+            if is_template_label(label, s.title) and f.kind not in ("FILE_UPLOADER",):
+                dropped.append(f"template:{label}")
                 continue
+            options = [o for n in f.option_lines if n in lines and (o := clean(lines[n]))]
             kind = FieldType(f.kind)
-            yes_no = {o.strip().lower() for o in f.options} <= {"tak", "nie", "yes", "no"}
-            if (
-                kind in (FieldType.RADIO, FieldType.CHECKBOX)
-                and ATTACHMENT_RE.search(f.label)
-                and f.options
-                and not yes_no
-            ):
-                for opt in f.options:
-                    if opt.strip() and not FILL_ONLY.match(opt) and grounded(opt, source_text):
-                        fields.append(FieldSpec(label=opt.strip(), kind=FieldType.FILE_UPLOADER, required=False))
+            yes_no = {o.lower() for o in options} <= {"tak", "nie", "yes", "no"}
+            if kind in (FieldType.RADIO, FieldType.CHECKBOX) and ATTACHMENT_RE.search(label) and options and not yes_no:
+                fields.extend(FieldSpec(label=o, kind=FieldType.FILE_UPLOADER, required=False) for o in options)
                 continue
-            if kind in (FieldType.RADIO, FieldType.CHECKBOX, FieldType.SELECT) and len(f.options) < 2:
-                kind = FieldType.FILE_UPLOADER if ATTACHMENT_RE.search(f.label) else FieldType.TEXT_FIELD
-            if any(x.label.lower() == f.label.strip().rstrip(":").lower() for x in fields):
-                dropped.append(f"duplicate:{f.label}")
+            if kind in (FieldType.RADIO, FieldType.CHECKBOX, FieldType.SELECT) and len(options) < 2:
+                kind = FieldType.FILE_UPLOADER if ATTACHMENT_RE.search(label) else FieldType.TEXT_FIELD
+            if any(x.label.lower() == label.lower() for x in fields):
+                dropped.append(f"duplicate:{label}")
                 continue
             validators = [Validator(f.validator)] if f.validator else []
             dictionary = (
-                dictionary_for(f.label) if kind in (FieldType.TEXT_FIELD, FieldType.SELECT, FieldType.RADIO) else None
+                dictionary_for(label) if kind in (FieldType.TEXT_FIELD, FieldType.SELECT, FieldType.RADIO) else None
             )
             if dictionary:  # predefined dictionaries attach only to a drop-down list
                 kind = FieldType.SELECT
             fields.append(
                 with_proposed(
                     FieldSpec(
-                        label=f.label.strip().rstrip(":"),
+                        label=label,
                         kind=kind,
-                        options=[o.strip() for o in f.options if o.strip()],
+                        options=options,
                         required=f.required,
                         validators=validators,
                         description=f.description.strip(),
-                        visible_when=_cond(f.visible_when),
+                        visible_when=_cond(f.visible_when, labels, lines),
                         dictionary=dictionary,
                     )
                 )
@@ -235,7 +250,7 @@ def to_spec(g: LlmGlobal, sections: list[LlmSection], source_text: str, *, with_
                 description=s.description.strip(),
                 fields=fields,
                 repeating=s.repeating,
-                visible_when=_cond(s.visible_when),
+                visible_when=_cond(s.visible_when, labels, lines),
             )
         )
     if dropped:
@@ -266,7 +281,6 @@ LEGAL_RE = re.compile(
     r"\bnip\b|\bregon\b|\bkrs\b|nazwa (firmy|podmiotu|organizacji|klubu|spółki|instytucji)|siedzib|osob[ay] prawn|jednostk[ai] organizacyjn|reprezentant|podmiot",
     re.I,
 )
-FILL_ONLY = re.compile(r"^[\s_.…-]*$")
 ATTACHMENT_RE = re.compile(r"załączni|w załączeniu|\bplik|dokument|dołącz|kopi[ae]\b|odpis", re.I)
 CONSENT_SECTION_RE = re.compile(r"^(zgod|oświadcz)", re.I)
 TEMPLATE_SECTION_RE = re.compile(r"^dane do kontaktu$|^kontakt|^dane kontaktowe|^twoje dane|^dane wnioskodawcy$", re.I)
@@ -308,7 +322,14 @@ def _cap_pages(pages: list[PageSpec], limit: int) -> list[PageSpec]:
     return pages
 
 
-def _cond(c) -> list[Condition]:
-    if c is None or not c.field_label.strip() or not c.equals.strip():
+def _label(f: LlmField, lines: Lines) -> str:
+    """The override when the source supports it, else the cleaned line text."""
+    override = f.label.strip().rstrip(":").strip()
+    return override if override and grounded(override, " ".join(lines.values())) else clean(lines[f.line])
+
+
+def _cond(c: LlmCondition | None, labels: dict[int, str], lines: Lines) -> list[Condition]:
+    if c is None or not labels.get(c.field_line) or c.option_line not in lines:
         return []
-    return [Condition(field=c.field_label.strip(), value=c.equals.strip())]
+    value = clean(lines[c.option_line])
+    return [Condition(field=labels[c.field_line], value=value)] if value else []
