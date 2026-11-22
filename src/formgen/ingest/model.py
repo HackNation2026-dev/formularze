@@ -60,14 +60,45 @@ class Document:
     def text(self) -> str:
         return "\n".join(ln.text for p in self.pages for ln in p.lines)
 
-    def to_prompt_text(self, page_numbers: list[int] | None = None) -> str:
-        """Layout-aware plain text for the LLM: headings as '## ', fills as '____', boxes as '☐', tables as rows."""
+    def to_prompt_text(self, page_numbers: list[int] | None = None, numbered: bool = False) -> str:
+        """Layout-aware plain text for the LLM: headings as '## ', fills as '____', boxes as '☐', tables as rows.
+        ``numbered`` prefixes every line and table row with '[n] ', n running over the whole document, so the
+        model can point at a line instead of re-typing it (see ``numbered_lines``)."""
         out: list[str] = []
+        n = 0
+        for p, items in self._page_items():
+            shown = not page_numbers or p.number in page_numbers
+            if shown:
+                out.append(f"=== strona {p.number} ===")
+            for item in items:
+                rows = item if isinstance(item, list) else [item]
+                tagged = []
+                for row in rows:
+                    n += 1
+                    tagged.append(f"[{n}] {row}" if numbered else row)
+                if shown:
+                    out.append(
+                        "[tabela]\n" + "\n".join(tagged) + "\n[/tabela]" if isinstance(item, list) else tagged[0]
+                    )
+        return "\n".join(out)
+
+    def numbered_lines(self, page_numbers: list[int] | None = None) -> dict[int, str]:
+        """n -> emitted text (without the '[n] ' prefix) of the lines ``to_prompt_text(numbered=True)`` shows."""
+        out: dict[int, str] = {}
+        n = 0
+        for p, items in self._page_items():
+            for item in items:
+                for row in item if isinstance(item, list) else [item]:
+                    n += 1
+                    if not page_numbers or p.number in page_numbers:
+                        out[n] = row
+        return out
+
+    def _page_items(self) -> list[tuple[Page, list[str | list[str]]]]:
+        """Per page, in reading order: a line as str, a table as its list of ' | '-joined rows."""
+        out: list[tuple[Page, list[str | list[str]]]] = []
         for p in self.pages:
-            if page_numbers and p.number not in page_numbers:
-                continue
-            out.append(f"=== strona {p.number} ===")
-            items: list[tuple[float, str]] = []
+            items: list[tuple[float, str | list[str]]] = []
             prev_prompt = False  # previous line ended with ':' -> numbered items below are choices
             for ln in p.lines:
                 t = normalise(ln.text)
@@ -81,10 +112,10 @@ class Document:
             for tb in p.tables:
                 rows = [" | ".join(normalise(c) for c in r) for r in tb.rows if any(c.strip() for c in r)]
                 if rows:
-                    items.append((tb.top, "[tabela]\n" + "\n".join(rows) + "\n[/tabela]"))
+                    items.append((tb.top, rows))
             items.sort(key=lambda x: x[0])
-            out.extend(s for _, s in items)
-        return "\n".join(out)
+            out.append((p, [it for _, it in items]))
+        return out
 
 
 def normalise(text: str) -> str:
