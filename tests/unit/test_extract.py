@@ -530,3 +530,13 @@ def test_a_line_with_a_printed_address_is_filled_data_not_a_field():
     )
     spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
     assert [f.label for f in spec.pages[0].sections[0].fields] == ["Ulica"]
+
+
+def test_office_address_section_is_noise():
+    # 05 png: the model gave the addressee (Urząd Gminy, its street, postal code) its own section
+    from formgen.extract.extractor import NOISE_SECTION_RE
+
+    assert NOISE_SECTION_RE.search("Dane urzędowe")
+    assert NOISE_SECTION_RE.search("Dane urzędu")
+    assert NOISE_SECTION_RE.search("Adresat wniosku")
+    assert not NOISE_SECTION_RE.search("Lokalizacja budynku")

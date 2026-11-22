@@ -313,7 +313,7 @@ ATTACHMENT_RE = re.compile(r"załączni|w załączeniu|\bplik|dokument|dołącz|
 CONSENT_SECTION_RE = re.compile(r"^(zgod|oświadcz)", re.I)
 TEMPLATE_SECTION_RE = re.compile(r"^dane do kontaktu$|^kontakt|^dane kontaktowe|^twoje dane|^dane wnioskodawcy$", re.I)
 NOISE_SECTION_RE = re.compile(
-    r"wyjaśnien|objaśnien|instrukc|pouczen|\brodo\b|przetwarzan|klauzul|adnotacj|wypełnia (organ|urząd|pracownik)|informacj[ae] o przetwarzaniu|administrator|podstawa prawna|termin składania",
+    r"wyjaśnien|objaśnien|instrukc|pouczen|\brodo\b|przetwarzan|klauzul|adnotacj|wypełnia (organ|urząd|pracownik)|informacj[ae] o przetwarzaniu|administrator|podstawa prawna|termin składania|dane urzęd|urzędow|adresat",
     re.I,
 )
 MAX_SUBJECT_PAGES = 5
