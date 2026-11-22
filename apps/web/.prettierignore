@@ -1,0 +1,8 @@
+.next/
+node_modules/
+public/mockServiceWorker.js
+src/design-system/tokens/tokens.generated.css
+src/mocks/fixtures/
+package-lock.json
+test-results/
+playwright-report/

@@ -1,0 +1,19 @@
+{
+  "empty": "The form has no steps",
+  "steps": "Form steps",
+  "back": "Back",
+  "next": "Next",
+  "cancel": "Cancel filling in",
+  "cancelled": "Form filling cancelled",
+  "restart": "Start again",
+  "dictionary": "Dictionary: {name}",
+  "example": "Example value",
+  "choose": "Choose a value",
+  "file": "Add or drag a file",
+  "fileHelp": "Preview — files are not uploaded.",
+  "add": "Add another",
+  "conditionError": "invalid condition",
+  "evaluating": "Evaluating conditions",
+  "finished": "End of form",
+  "required": "Required field"
+}

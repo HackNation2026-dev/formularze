@@ -1,0 +1,8 @@
+{
+  "name": "@formgen/disabled-sharp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jawne wyłączenie opcjonalnego optymalizatora obrazów Next.js",
+  "license": "ISC",
+  "main": "index.cjs"
+}

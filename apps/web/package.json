@@ -1,0 +1,67 @@
+{
+  "name": "@formgen/web",
+  "version": "0.1.0",
+  "description": "Interfejs generatora formularzy",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "format": "prettier --write .",
+    "sync:tokens": "node scripts/sync-tokens.mjs",
+    "sync:fixtures": "node scripts/sync-fixtures.mjs",
+    "pack:disabled-sharp": "npm pack ./scripts/disabled-sharp --pack-destination ./scripts --ignore-scripts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/source-code-pro": "5.3.1",
+    "@tanstack/react-form": "1.33.5",
+    "@tanstack/react-query": "5.108.2",
+    "@tanstack/react-table": "9.3.1",
+    "jsonata": "2.2.2",
+    "next": "16.4.6",
+    "next-intl": "4.15.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "sharp": "file:./scripts/formgen-disabled-sharp-1.0.0.tgz"
+  },
+  "private": true,
+  "overrides": {
+    "sharp": "$sharp"
+  },
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@tailwindcss/postcss": "4.3.5",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "8.0.0",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
+    "jsdom": "31.0.1",
+    "msw": "3.0.7",
+    "prettier": "3.10.1",
+    "tailwindcss": "4.3.5",
+    "typescript": "6.0.3",
+    "vitest": "5.1.1"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

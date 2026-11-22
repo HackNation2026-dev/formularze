@@ -2,6 +2,7 @@
 
 ## Niewydane
 
+- Aplikacja GUI `apps/web/` (ADR-002): Next.js 16, React 19, TypeScript, TanStack Query/Table/Form, next-intl PL/EN, Tailwind v4 z tokenami, atomic design system z katalogiem `/design-system`, wszystkie podstawowe widoki (logowanie, upload z kolejką, wynik JSON, walidacja, podgląd e-usługi ze stanami JSONata, otwórz JSON, ustawienia, stany błędów), mock API (MSW), 324 testy jednostkowe i 28 e2e, workflow CI `web.yml`. Spec i plan w `docs/superpowers/`, lista zadań na kolejny etap w `docs/08-implementacja/GUI-DO-ZROBIENIA.md`.
 - Walidatory PL (`schema/validators.py`) i `sample_values` w `POST /api/v1/forms/validate` (#3).
 - Propozycja 3 nowych słowników: dyscypliny sportowe, rasy psów, podatki i opłaty lokalne (#4); wynik formularza 09 z pełną listą dyscyplin (#5).
 - Otwarty model w chmurze przez API z lokalnym zapasem: `LLM_API_KEY`, `LLM_FALLBACK_BASE_URL`, `scripts/legion/serve_gpu.sh`, `docs/08-implementacja/DEMO-SETUP.md` (#6).
@@ -10,6 +11,7 @@
 - CI uruchamia testy, ruff i sync materiałów na każdym push i PR; `main` i `develop` chronione.
 - Dodano interfejs przeglądu `/review/` (pkt 3.3 IV i V): podgląd PDF obok wszystkich pól, symulacja warunków JSONata w izolowanym workerze, uwagi i zgłoszenia braków, eksport czystego JSON i osobnego raportu. 13 testów Playwright.
 - Dockerfile ma etap `node:22.23.1-alpine3.24`, który buduje przypięte zasoby UI. `pyproject.toml` pakuje UI, `verify_docs.py` pomija `node_modules`.
+- Dodano makiety GUI (FigCraft): projekt i plan w `docs/superpowers/`, opis w `docs/08-implementacja/GUI-MAKIETY.md`, tokeny `design/tokens.css` i `design/tokens.json` (generator `scripts/gui_tokens_from_css.py`) oraz testy kontrastu WCAG i spójności tokenów `tests/test_gui_tokens.py`. Plik `.figcraft` nie jest w Git (silnik FigCraft nie zapisuje do repo).
 
 ## 0.4.0 — 2026-11-21
 

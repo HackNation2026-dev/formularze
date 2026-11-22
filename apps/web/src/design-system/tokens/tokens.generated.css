@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Theme · Light */
+@theme static {
+  --color-background: #F4F6F9;
+  --color-surface: #FFFFFF;
+  --color-border: #D5DBE3;
+  --color-border-strong: #6B7686;
+  --color-text: #141A24;
+  --color-muted: #4A5565;
+  --color-primary: #0052A5;
+  --color-primary-foreground: #FFFFFF;
+  --color-success: #1B7F4B;
+  --color-warning: #8A5A00;
+  --color-danger: #B3261E;
+  --color-info: #0B6BCB;
+}
+/* Theme · Dark */
+[data-theme="Dark"] {
+  --color-background: #0E131B;
+  --color-surface: #161D28;
+  --color-border: #2B3647;
+  --color-border-strong: #7D8AA0;
+  --color-text: #E8EDF4;
+  --color-muted: #A3AFC0;
+  --color-primary: #6AA6F0;
+  --color-primary-foreground: #0B1220;
+  --color-success: #4CC38A;
+  --color-warning: #E5B13A;
+  --color-danger: #FF8A80;
+  --color-info: #7DB6F5;
+}
+/* Scale · Mode 1 */
+@theme static {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
