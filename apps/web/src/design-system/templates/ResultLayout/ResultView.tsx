@@ -54,9 +54,7 @@ export function ResultView({ id, mode }: { id: string; mode: ResultMode }) {
       }))}
       active={mode}
     >
-      {result.meta.extractor === 'HeuristicExtractor' && (
-        <Callout>{t('degraded')}</Callout>
-      )}
+      {result.meta.partialResult && <Callout>{t('degraded')}</Callout>}
       {mode === 'json' && (
         <JsonViewer
           value={result.form}
@@ -69,6 +67,14 @@ export function ResultView({ id, mode }: { id: string; mode: ResultMode }) {
         <FormRenderer form={result.form} labels={previewLabels(p)} />
       )}
     </ResultLayout>
+  );
+}
+export type ValidationResult = import('@/lib/api/schemas').ValidationResult;
+export function showValidationList(data: ValidationResult): boolean {
+  return (
+    data.errors.length > 0 ||
+    data.warnings.length > 0 ||
+    (data.sample_errors.length === 0 && data.sample_unknown.length === 0)
   );
 }
 function Validation({ form }: { form: FormDefinition }) {
@@ -121,10 +127,7 @@ function Validation({ form }: { form: FormDefinition }) {
       )}
       {state.data ? (
         <>
-          {(state.data.errors.length > 0 ||
-            state.data.warnings.length > 0 ||
-            (state.data.sample_errors.length === 0 &&
-              state.data.sample_unknown.length === 0)) && (
+          {showValidationList(state.data) && (
             <ValidationList
               issues={[...state.data.errors, ...state.data.warnings]}
               labels={labels}

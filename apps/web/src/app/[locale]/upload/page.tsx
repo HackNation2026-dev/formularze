@@ -23,6 +23,7 @@ import { Skeleton } from '@/design-system/atoms/Skeleton';
 import { Callout } from '@/design-system/molecules/Callout';
 import { KeyValue } from '@/design-system/molecules/KeyValue';
 import { EmptyState } from '@/design-system/molecules/EmptyState';
+import { ApiActivityFeed } from '@/design-system/organisms/ApiActivityFeed';
 function errorMessage(
   error: ApiError,
   t: ReturnType<typeof useTranslations<'upload'>>,
@@ -59,8 +60,13 @@ function FileDetails({ item }: { item: QueueItem }) {
           {item.error.code} · {errorMessage(item.error, t)}
         </Callout>
       )}
-      {metadata?.extractor === 'HeuristicExtractor' && (
-        <Callout>{t('degraded')}</Callout>
+      {metadata?.partialResult && (
+        <Callout>
+          {t('degraded')}
+          {(metadata.partialReasons?.length ?? 0) > 0 && (
+            <Text muted>{t('partialReasons', { reasons: (metadata.partialReasons ?? []).join(', ') })}</Text>
+          )}
+        </Callout>
       )}
       {item.resultId && (
         <Button onClick={() => router.push(`/results/${item.resultId}/json`)}>
@@ -188,11 +194,9 @@ export default function Page() {
                         status: item.error.status,
                         message: errorMessage(item.error, t),
                       },
-                      details:
-                        getResult(item.resultId ?? '')?.meta.extractor ===
-                        'HeuristicExtractor' ? (
-                          <Callout>{t('degraded')}</Callout>
-                        ) : undefined,
+                      details: getResult(item.resultId ?? '')?.meta.partialResult ? (
+                        <Callout>{t('degraded')}</Callout>
+                      ) : undefined,
                       actions: (
                         <div className="flex flex-wrap gap-2">
                           <Button
@@ -259,6 +263,9 @@ export default function Page() {
         >
           {detail && <FileDetails item={detail} />}
         </BottomSheet>
+        <ApiActivityFeed
+          labels={{ title: shell('activityTitle'), empty: shell('activityEmpty') }}
+        />
       </div>
     </ApplicationShell>
   );

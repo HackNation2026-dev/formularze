@@ -12,6 +12,10 @@ export default defineConfig({
     command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}/pl`,
     reuseExistingServer: !process.env.CI,
-    env: { NEXT_PUBLIC_API_MODE: 'mock', NEXT_TELEMETRY_DISABLED: '1' },
+    env: {
+      // PLAYWRIGHT_API_MODE=live uruchamia e2e na prawdziwym backendzie (API_INTERNAL_URL)
+      NEXT_PUBLIC_API_MODE: process.env.PLAYWRIGHT_API_MODE ?? 'mock',
+      NEXT_TELEMETRY_DISABLED: '1',
+    },
   },
 });

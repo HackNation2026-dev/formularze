@@ -2,6 +2,7 @@
   "title": "Form generator",
   "navigation": "Navigation",
   "upload": "Upload",
+  "batch": "Batch",
   "result": "Result",
   "open": "Open JSON",
   "settings": "Settings",
@@ -21,5 +22,7 @@
   "close": "Close",
   "unknown": "No data",
   "organisms": "Organisms",
-  "templates": "Templates"
+  "templates": "Templates",
+  "activityTitle": "API activity",
+  "activityEmpty": "No API calls yet"
 }

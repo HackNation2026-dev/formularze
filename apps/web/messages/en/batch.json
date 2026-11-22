@@ -1,0 +1,14 @@
+{
+  "title": "Batch upload",
+  "drop": "Drop multiple files here",
+  "choose": "Choose files",
+  "limit": "Many files in one request (max {max}).",
+  "tooMany": "Skipped {count} files over the limit.",
+  "analyze": "Analyze all",
+  "summary": "Done: {done} of {total}",
+  "errorsSummary": "Errors: {failed} — “Retry” sends the file individually.",
+  "queue": "Batch files",
+  "empty": "No files",
+  "emptyDescription": "Add files to send them in a single request to /analyze-batch.",
+  "open": "Open result"
+}

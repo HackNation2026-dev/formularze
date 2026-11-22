@@ -2,6 +2,7 @@
   "title": "Generator formularzy",
   "navigation": "Nawigacja",
   "upload": "Wczytaj",
+  "batch": "Wsad",
   "result": "Wynik",
   "open": "Otwórz JSON",
   "settings": "Ustawienia",
@@ -21,5 +22,7 @@
   "close": "Zamknij",
   "unknown": "Brak danych",
   "organisms": "Organizmy",
-  "templates": "Szablony"
+  "templates": "Szablony",
+  "activityTitle": "Aktywność API",
+  "activityEmpty": "Brak wywołań API"
 }

@@ -10,6 +10,8 @@ const result: AnalyzeResult = {
     extractor: 'StubExtractor',
     processingTimeMs: 5,
     detectedType: 'pdf',
+    partialResult: false,
+    partialReasons: [],
     warnings: 0,
   },
 };

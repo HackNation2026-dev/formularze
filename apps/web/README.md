@@ -1,6 +1,6 @@
 # Generator formularzy — aplikacja webowa
 
-Aplikacja Next.js (App Router), React i TypeScript strict: logowanie, kolejka analizy, wynik JSON, walidacja, podgląd e-usługi, otwieranie lokalnego JSON i ustawienia. Działa z mockiem API oraz lokalnym backendem. Weryfikacja, edycja i wsad W3c pozostają do implementacji.
+Aplikacja Next.js (App Router), React i TypeScript strict: wejście w panelu uploadu (kolejka analizy, szczegóły plików, dziennik aktywności API), wsad `/batch`, wynik JSON, walidacja, podgląd e-usługi, otwieranie lokalnego JSON i ustawienia. Domyślnie działa z prawdziwym API (tryb `live` przez proxy samego originu); mock MSW tylko na wyraźną zmienną. Weryfikacja, edycja i raport uwag W3c pozostają do implementacji.
 
 Wymagany Node.js 22.22.2+, 24.15.0+ lub ≥26 i npm (ograniczenie narzędzi testowych). Wszystkie wersje zależności są przypięte w `package.json` i `package-lock.json`.
 
@@ -20,6 +20,7 @@ Każda trasa ma prefiks `/pl` lub `/en`:
 | -------------------------- | ------------------------------------------------- |
 | `/login`                   | Token JWT lub kontynuacja bez logowania           |
 | `/upload`                  | Wybór plików, kolejka i szczegóły                 |
+| `/batch`                   | Wsad do 20 plików jednym żądaniem                 |
 | `/results/[id]/json`       | Kolorowany, zwijany JSON; kopiowanie i pobieranie |
 | `/results/[id]/validation` | Walidacja struktury i przykładowych wartości      |
 | `/results/[id]/preview`    | Interaktywny podgląd i warunki JSONata            |
@@ -38,15 +39,19 @@ Po dodaniu plików wybierz „Analizuj wszystko”. Żądania idą kolejno; poje
 Opcjonalna konfiguracja `.env.local` (wzór: `.env.example`):
 
 ```dotenv
-NEXT_PUBLIC_API_MODE=mock
+NEXT_PUBLIC_API_MODE=live
 NEXT_PUBLIC_API_BASE=
 ```
 
-Tryb `mock` uruchamia MSW w przeglądarce przed renderowaniem zawartości. Jest domyślny w `dev` i jawnie włączany w e2e. Produkcyjny build bez konfiguracji używa `live`. Zmienne `NEXT_PUBLIC_*` są wbudowywane podczas kompilacji, więc zmiana wymaga nowego builda. W `live` ustaw `NEXT_PUBLIC_API_MODE=live` i adres lokalnego backendu w `NEXT_PUBLIC_API_BASE` (lub zostaw pusty, jeżeli API jest dostępne pod tym samym origin). Oddzielny origin wymaga CORS i udostępnienia nagłówków `X-*` po stronie serwera.
+Tryb `live` jest domyślny (także w `dev`); `mock` włącza się wyłącznie jawną zmienną `NEXT_PUBLIC_API_MODE=mock` i uruchamia MSW w przeglądarce przed renderowaniem zawartości. E2e domyślnie używa mocka; `PLAYWRIGHT_API_MODE=live` uruchamia je na prawdziwym backendzie. Zmienne `NEXT_PUBLIC_API_BASE` adresuje backend wprost, a puste pole oznacza API pod tym samym origin: `next.config.ts` przekazuje proxy `/health`, `/ready` i `/api/:path*` na `API_INTERNAL_URL` (domyślnie `http://127.0.0.1:8001`), więc ten sam origin nie wymaga CORS ani udostępniania nagłówków `X-*`.
 
 Klient: `src/lib/api/index.ts`. Metody: `health`, `ready`, `formats`, `analyze`, `analyzeBatch`, `validate`. Hooki TanStack Query: `useHealth`, `useReady`, `useFormats`, `useAnalyze`, `useValidate`. Token: `tokenStore.get()/set()`, klucz `formgen.token` w localStorage, nagłówek `Authorization: Bearer`. Nie zapisuj prawdziwych tokenów w repo.
 
-`analyze` zwraca `{form, metadata}`; metadane mają klucze `processingTimeMs`, `detectedType`, `warnings`, `extractor`. Brak nagłówka daje `null`. `/ready` zachowuje poprawną treść ze statusem `unavailable` również przy HTTP 503. Pozostałe błędy HTTP są `ApiError` z `code`, `status`, `message`, `details`, `hasEnvelope`. Brak koperty daje `HTTP_ERROR` i komunikat `HTTP <status>`; awaria sieci `NETWORK_ERROR`, niezgodna odpowiedź `INVALID_RESPONSE`. Anulowanie zachowuje `AbortError`.
+`analyze` zwraca `{form, metadata}`; metadane mają klucze `processingTimeMs`, `detectedType`, `warnings`, `extractor`, `partialResult`, `partialReasons` (z nagłówków `X-Partial-Result` i `X-Partial-Reasons`). Brak nagłówka daje `null`. Każde żądanie klienta trafia do dziennika aktywności (`src/lib/api/activity.ts`), widocznego w panelu uploadu jako „Aktywność API”. `/ready` zachowuje poprawną treść ze statusem `unavailable` również przy HTTP 503. Pozostałe błędy HTTP są `ApiError` z `code`, `status`, `message`, `details`, `hasEnvelope`. Brak koperty daje `HTTP_ERROR` i komunikat `HTTP <status>`; awaria sieci `NETWORK_ERROR`, niezgodna odpowiedź `INVALID_RESPONSE`. Anulowanie zachowuje `AbortError`.
+
+## Wsad
+
+`/batch` wysyła do 20 plików jednym żądaniem `POST /api/v1/forms/analyze-batch` (`features/batch`). Każdy plik dostaje wiersz ze statusem i `error.code`; „Otwórz wynik” publikuje wynik przez `putResult` i otwiera podgląd, a „Ponów” wysyła odrzucony plik pojedynczo przez `/analyze`.
 
 ## Scenariusze mocka
 

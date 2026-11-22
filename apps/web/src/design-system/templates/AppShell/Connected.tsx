@@ -81,7 +81,7 @@ export function ApplicationShell({ children }: { children: ReactNode }) {
       controls={<PreferenceControls />}
       navigation={{
         label: t('navigation'),
-        items: (['upload', 'result', 'open', 'settings'] as const).map(
+        items: (['upload', 'batch', 'result', 'open', 'settings'] as const).map(
           (name) => ({
             href: `/${locale}/${name === 'result' ? (lastResultId ? `results/${encodeURIComponent(lastResultId)}/json` : 'upload') : name}`,
             label: t(name),
