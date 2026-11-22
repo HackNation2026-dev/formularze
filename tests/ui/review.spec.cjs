@@ -476,3 +476,138 @@ test("dropping several files sends one batch, lists each file with its status an
   await expect(page.getByText("PDF: strona 1 z 1")).toBeVisible();
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual({});
 });
+
+function sha256(value) {
+  const canonical = (v) =>
+    Array.isArray(v)
+      ? `[${v.map(canonical).join(",")}]`
+      : v && typeof v === "object"
+        ? `{${Object.keys(v)
+            .sort()
+            .map((k) => `${JSON.stringify(k)}:${canonical(v[k])}`)
+            .join(",")}}`
+        : JSON.stringify(v);
+  return require("node:crypto")
+    .createHash("sha256")
+    .update(canonical(value))
+    .digest("hex");
+}
+
+test("clerk renames, retypes and deletes fields; validation and export carry the edits, a new digest and clerk provenance", async ({
+  page,
+}) => {
+  await loadReference(page);
+  const original = JSON.parse(await fs.readFile(reference, "utf8"));
+  const box = (tech) => page.locator(`[data-tech="${tech}"]`);
+  async function note(tech, title, text) {
+    await box(tech)
+      .getByRole("button", { name: `Dodaj uwagę: ${title}`, exact: true })
+      .click();
+    await page.getByLabel("Treść uwagi", { exact: true }).fill(text);
+    await page
+      .getByRole("button", { name: "Zapisz uwagę", exact: true })
+      .click();
+  }
+  async function openEditor(tech, title) {
+    await box(tech)
+      .getByRole("button", { name: `Edytuj pole: ${title}`, exact: true })
+      .click();
+    return box(tech).locator(".field-editor");
+  }
+  await note("imie", "Imię", "Pole powtórzone.");
+  await note("numer_pesel", "Numer PESEL", "Sprawdzić format.");
+
+  let editor = await openEditor("nazwa_urzedu", "Nazwa urzędu");
+  await editor.getByLabel("Etykieta pola").fill("Nazwa urzędu skarbowego");
+  await editor.getByRole("button", { name: "Zapisz zmiany" }).click();
+  await expect(
+    box("nazwa_urzedu").getByRole("heading", {
+      name: "Nazwa urzędu skarbowego",
+    }),
+  ).toBeVisible();
+
+  editor = await openEditor("kwota", "Kwota");
+  await editor.getByLabel("Typ pola").selectOption("RADIO");
+  await editor.getByRole("button", { name: "Zapisz zmiany" }).click();
+  await expect(box("kwota").locator(".meta").first()).toHaveText(
+    "RADIO · kwota",
+  );
+
+  editor = await openEditor("plik_z_odpisem_danych", "Plik z odpisem danych");
+  await expect(
+    editor.getByRole("button", { name: "Usuń pole" }),
+  ).toBeDisabled();
+  await editor.getByRole("button", { name: "Anuluj" }).click();
+
+  editor = await openEditor("imie", "Imię");
+  await editor.getByRole("button", { name: "Usuń pole" }).click();
+  await expect(box("imie")).toHaveCount(0);
+  await expect(page.locator("[data-field]")).toHaveCount(72);
+
+  const expected = structuredClone(original);
+  const grid = (tab, tech) =>
+    expected.tabs[tab].questions.find((q) => q.field.techName === tech).field
+      .repeatingSectionGrid;
+  grid(0, "urzad_do_ktorego_jest_skladany_wniosek")[0].field.title =
+    "Nazwa urzędu skarbowego";
+  grid(1, "informacje_o_nadplacie").find(
+    (q) => q.field.techName === "kwota",
+  ).field.type = "RADIO";
+  const person = grid(0, "twoje_dane");
+  person.splice(
+    person.findIndex((q) => q.field.techName === "imie"),
+    1,
+  );
+  for (const q of person) {
+    q.y -= 1;
+    q.field.questionOrder -= 1;
+  }
+  await expect(page.locator("#digest")).toHaveText(
+    `SHA-256 konfiguracji: ${sha256(expected)}`,
+  );
+  await expect(page.locator("#provenance")).toContainText(
+    "Edytowane przez urzędnika (liczba zmian: 3)",
+  );
+
+  await page.getByText("Uwierzytelnianie API", { exact: true }).click();
+  await page.getByLabel("Token Bearer").fill(bearerToken());
+  const sent = page.waitForRequest("**/api/v1/forms/validate");
+  await page
+    .getByRole("button", { name: "Waliduj strukturę przez API" })
+    .click();
+  expect((await sent).postDataJSON()).toEqual(expected);
+  await expect(page.locator("#validation")).toContainText("Struktura poprawna");
+  await expect(page.locator("#validation")).toContainText(
+    "NO_OPTIONS: RADIO has neither options nor dictionary Informacje o nadpłacie/kwota",
+  );
+
+  expect(await downloadJson(page, "Pobierz czysty JSON")).toEqual(expected);
+  const report = await downloadJson(page, "Pobierz raport uwag");
+  expect(report).toMatchObject({
+    reportVersion: 2,
+    configurationSha256: sha256(expected),
+    baseConfigurationSha256: sha256(original),
+    editedByClerk: true,
+    edits: [
+      {
+        action: "rename",
+        techName: "nazwa_urzedu",
+        from: "Nazwa urzędu",
+        to: "Nazwa urzędu skarbowego",
+      },
+      { action: "retype", techName: "kwota", from: "NUMBER", to: "RADIO" },
+      { action: "delete", techName: "imie", removed: ["imie"] },
+    ],
+  });
+  expect(report.annotations.map((a) => a.field)).toEqual([
+    expect.objectContaining({ techName: "imie", key: null, deleted: true }),
+    expect.objectContaining({
+      techName: "numer_pesel",
+      key: await box("numer_pesel").getAttribute("data-field"),
+      deleted: false,
+    }),
+  ]);
+  await expect(page.locator("#notes")).toContainText(
+    "Imię (imie) — pole usunięte",
+  );
+});

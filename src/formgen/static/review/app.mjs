@@ -1,13 +1,19 @@
 import { renderForm, element } from "./render.mjs";
-import { checkShape, fields, digest } from "./configuration.mjs";
+import { checkShape, fields, digest, editField } from "./configuration.mjs";
 import { api } from "./api.mjs";
 import { connectPdf } from "./pdf.mjs";
 const $ = (id) => document.getElementById(id);
 let configurationSha256 = "",
+  baseConfigurationSha256 = "",
+  edits = [],
   annotations = [],
   noteTarget = null,
+  noteObject = null,
   provenance = null,
-  loadVersion = 0;
+  loadVersion = 0,
+  digestVersion = 0;
+// Field notes follow their live field, so edits update the key or mark it deleted.
+const noteFields = new WeakMap();
 let config = null,
   views = new Map(),
   answers = new Map();
@@ -45,26 +51,56 @@ async function loadConfig(value, origin) {
   checkShape(value);
   const hash = await digest(value);
   if (version !== loadVersion) return;
-  configurationSha256 = hash;
+  configurationSha256 = baseConfigurationSha256 = hash;
+  edits = [];
   annotations = [];
   provenance = origin;
-  $("notes").replaceChildren();
   $("note-form").hidden = true;
   noteTarget = null;
   $("digest").textContent = `SHA-256 konfiguracji: ${hash}`;
   $("validation").textContent = "Walidacja struktury: nie uruchomiono.";
   for (const id of ["export-json", "export-report", "missing", "validate"])
     $(id).disabled = false;
-  config = value;
+  // A private copy: edits must not alter a batch result or a reloaded file.
+  config = structuredClone(value);
   answers = initialAnswers(config);
-  views = renderForm(config, answers, evaluateConditions, openNote);
-  conditionResults = {};
-  evaluateConditions();
-  $("provenance").textContent =
-    typeof origin === "string" ? origin : origin.label;
+  showForm();
+  renderNotes();
   status(
     `Wczytano ${fields(config).length} elementów. Kompletność treści wymaga porównania ze źródłem.`,
   );
+}
+function showForm() {
+  views = renderForm(config, answers, evaluateConditions, openNote, edit);
+  conditionResults = {};
+  evaluateConditions();
+  $("provenance").textContent =
+    (typeof provenance === "string" ? provenance : provenance.label) +
+    (edits.length
+      ? ` · Edytowane przez urzędnika (liczba zmian: ${edits.length})`
+      : "");
+}
+async function edit(key, change) {
+  const target = config,
+    version = ++digestVersion;
+  const entries = editField(target, key, change);
+  edits.push(...entries);
+  answers = initialAnswers(target);
+  showForm();
+  renderNotes();
+  (views.get(key)?.edit ?? $("status")).focus();
+  for (const id of ["export-json", "export-report"]) $(id).disabled = true;
+  $("digest").textContent = "SHA-256 konfiguracji: przeliczanie…";
+  $("validation").textContent =
+    "Walidacja struktury: nie uruchomiono po edycji.";
+  status(
+    `Zmieniono ${entries.map((e) => `${e.techName} (${e.action})`).join(", ")}. Odpowiedzi symulacji wyzerowane.`,
+  );
+  const hash = await digest(target);
+  if (version !== digestVersion || target !== config) return;
+  configurationSha256 = hash;
+  $("digest").textContent = `SHA-256 konfiguracji: ${hash}`;
+  for (const id of ["export-json", "export-report"]) $(id).disabled = false;
 }
 $("json-file").addEventListener("change", async (event) => {
   setBusy(true);
@@ -172,8 +208,9 @@ function download(name, value) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function openNote(field) {
+function openNote(field, object = null) {
   noteTarget = field;
+  noteObject = object;
   $("note-target").textContent = field
     ? `Uwaga do pola: ${field.title} (${field.techName})`
     : "Brakująca informacja — bez odpowiednika w konfiguracji";
@@ -197,30 +234,50 @@ $("note-form").addEventListener("submit", (event) => {
     text: value,
   };
   annotations.push(annotation);
-  $("notes").append(
-    element(
-      "li",
-      `${noteTarget ? noteTarget.title + " (" + noteTarget.techName + ")" : "Brakująca informacja"} — ${annotation.location}\n${annotation.text}`,
-    ),
-  );
+  if (noteObject) noteFields.set(annotation, noteObject);
+  renderNotes();
   $("note-form").hidden = true;
   $("missing").focus();
   status(`Zapisano uwagę. Raport zawiera ${annotations.length} uwag.`);
 });
+function currentAnnotations() {
+  const keys = new Map(fields(config).map((e) => [e.field, e.key]));
+  return annotations.map((a) => {
+    if (!a.field) return a;
+    const key = keys.get(noteFields.get(a));
+    return {
+      ...a,
+      field: { ...a.field, key: key ?? null, deleted: key === undefined },
+    };
+  });
+}
+function renderNotes() {
+  $("notes").replaceChildren(
+    ...currentAnnotations().map((a) =>
+      element(
+        "li",
+        `${a.field ? `${a.field.title} (${a.field.techName})${a.field.deleted ? " — pole usunięte" : ""}` : "Brakująca informacja"} — ${a.location}\n${a.text}`,
+      ),
+    ),
+  );
+}
 $("export-json").addEventListener("click", () =>
   download(`konfiguracja-${configurationSha256.slice(0, 12)}.json`, config),
 );
 $("export-report").addEventListener("click", () =>
   download(`raport-${configurationSha256.slice(0, 12)}.json`, {
-    reportVersion: 1,
+    reportVersion: 2,
     configurationSha256,
+    baseConfigurationSha256,
+    editedByClerk: edits.length > 0,
+    edits,
     hashMethod:
       "SHA-256 of UTF-8 JSON with sorted object keys, compact separators; array order preserved",
     configurationTitle: config.title,
     provenance,
     sourcePdfName: pdfFile?.name ?? null,
     createdAt: new Date().toISOString(),
-    annotations,
+    annotations: currentAnnotations(),
   }),
 );
 
