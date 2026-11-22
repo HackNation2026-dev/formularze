@@ -577,3 +577,34 @@ def test_fill_only_line_next_to_the_override_text_keeps_the_field():
     )
     spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
     assert [f.label for f in spec.pages[0].sections[0].fields] == ["Nr ewidencyjny działki"]
+
+
+def test_collapsed_chunk_answer_is_retried_on_halves():
+    # 09 pdf: on chunks with 50-70 fill/box lines the model answered one field and stopped
+    from formgen.config import Settings
+    from formgen.extract.extractor import LlmExtractor
+    from formgen.ingest.model import Document, Line, Page
+
+    class FakeClient:
+        def __init__(self):
+            self.chunk_calls = 0
+
+        def complete(self, system, user, out, max_tokens=2048):
+            if out is LlmGlobal:
+                return LlmGlobal(title="Wniosek testowy")
+            self.chunk_calls += 1
+            if self.chunk_calls == 1:  # the whole chunk: one field
+                return LlmChunk(sections=[LlmSection(page_title="P", title="S", fields=[LlmField(line=1)])])
+            first = int(user.split("\n[", 1)[1].split("]", 1)[0])  # first line number in this half
+            return LlmChunk(
+                sections=[
+                    LlmSection(page_title="P", title="S", fields=[LlmField(line=first), LlmField(line=first + 1)])
+                ]
+            )
+
+    lines = [Line(f"Pole numer {i} ____", top=i) for i in range(60)]
+    doc = Document(pages=[Page(number=1, lines=lines)])
+    client = FakeClient()
+    spec = LlmExtractor(client).extract_document(doc, "x.pdf", Settings(_env_file=None))
+    assert client.chunk_calls == 3  # whole chunk, then its two halves (each answers 2 fields: no further split)
+    assert len(spec.pages[0].sections[0].fields) == 4

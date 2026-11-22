@@ -27,6 +27,8 @@ CHARS_PER_TOKEN = 2.5
 TEMPLATE_TOKENS = 64  # chat template around system + user
 MIN_ANSWER_TOKENS = 1024  # below this a chunk is split before the call instead of truncated after it
 GROUNDING_MIN = 60
+# a chunk with this many '____'/'☐' lines answered with one field: the model stopped early (09: 1 of 73 lines)
+COLLAPSE_MIN_FILLS = 8
 # labels the template already covers; dropped if the LLM still emits them
 IDENTITY_LABELS = (
     "imię",
@@ -101,23 +103,33 @@ class LlmExtractor:
         self, client: LlmClient, pages: str, text: str, context_tokens: int, depth: int = 0
     ) -> list[LlmSection]:
         """One constrained call per chunk; the answer may use all context the prompt leaves free. A chunk whose
-        prompt leaves less than MIN_ANSWER_TOKENS, or whose answer is still truncated or malformed, is retried on
-        its two halves; a chunk that still fails is skipped, so one bad page never discards the whole form."""
+        prompt leaves less than MIN_ANSWER_TOKENS, whose answer is still truncated or malformed, or whose answer
+        collapsed to one field on a chunk full of fill lines, is retried on its two halves; a chunk that still
+        fails is skipped, so one bad page never discards the whole form."""
         user = SECTIONS_USER.format(pages=pages, text=text)
         budget = answer_budget(SYSTEM + user, context_tokens)
+        splittable = depth < 2 and len(text) >= 1200
         try:
             if budget < MIN_ANSWER_TOKENS:
                 raise ValueError(f"prompt leaves {budget} of {context_tokens} context tokens for the answer")
-            return client.complete(SYSTEM, user, LlmChunk, max_tokens=budget).sections
+            sections = client.complete(SYSTEM, user, LlmChunk, max_tokens=budget).sections
         except ValueError as exc:
-            if depth >= 2 or len(text) < 1200:
+            if not splittable:
                 log.warning("chunk %s skipped after invalid LLM output: %s", pages, str(exc)[:120])
                 return []
             log.info("chunk %s invalid (%s); retrying as two halves", pages, str(exc)[:80])
-            cut = text.rfind("\n", 0, len(text) // 2) or len(text) // 2
-            return self._sections_for(client, pages + "a", text[:cut], context_tokens, depth + 1) + (
-                self._sections_for(client, pages + "b", text[cut:], context_tokens, depth + 1)
-            )
+            return self._halves(client, pages, text, context_tokens, depth)
+        fills = sum(1 for line in text.splitlines() if FILL_MARK_RE.search(line))
+        if splittable and sum(len(s.fields) for s in sections) <= 1 and fills >= COLLAPSE_MIN_FILLS:
+            log.info("chunk %s answered one field for %d fill lines; retrying as two halves", pages, fills)
+            return self._halves(client, pages, text, context_tokens, depth)
+        return sections
+
+    def _halves(self, client: LlmClient, pages: str, text: str, context_tokens: int, depth: int) -> list[LlmSection]:
+        cut = text.rfind("\n", 0, len(text) // 2) or len(text) // 2
+        return self._sections_for(client, pages + "a", text[:cut], context_tokens, depth + 1) + (
+            self._sections_for(client, pages + "b", text[cut:], context_tokens, depth + 1)
+        )
 
 
 def answer_budget(prompt: str, context_tokens: int) -> int:
