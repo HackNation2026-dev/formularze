@@ -1,0 +1,9 @@
+node_modules/
+.next/
+coverage/
+playwright-report/
+test-results/
+.env*.local
+*.tsbuildinfo
+# Lokalne instrukcje generowane przez next dev z dokumentacji zainstalowanej wersji.
+/AGENTS.md

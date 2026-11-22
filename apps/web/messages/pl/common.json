@@ -1,0 +1,22 @@
+{
+  "title": "Generator formularzy",
+  "todo": "TODO W3",
+  "home": "Strona startowa",
+  "login": "Logowanie",
+  "upload": "Dodaj pliki",
+  "open": "Otwórz JSON",
+  "settings": "Ustawienia",
+  "design-system": "Katalog komponentów",
+  "json": "Wynik JSON",
+  "validation": "Walidacja",
+  "preview": "Podgląd e-usługi",
+  "notFound": "Nie znaleziono strony",
+  "error": "Wystąpił błąd",
+  "retry": "Spróbuj ponownie",
+  "language": "Język",
+  "theme": "Motyw",
+  "light": "Jasny",
+  "dark": "Ciemny",
+  "system": "Systemowy",
+  "loading": "Uruchamianie aplikacji"
+}
