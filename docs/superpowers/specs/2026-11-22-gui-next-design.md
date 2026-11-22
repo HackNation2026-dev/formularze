@@ -60,6 +60,18 @@ MSW działa w przeglądarce (dev) i w Node (Vitest). Zmienne: `NEXT_PUBLIC_API_M
 ## Design system (atomic design)
 Komponenty tylko z katalogu `src/design-system/` w czterech warstwach (atomy, molekuły, organizmy, szablony); strony składają szablony i organizmy. Zasady: atom nie importuje z wyższej warstwy; każdy komponent ma typowane propsy, stany (default, hover, focus, disabled, error, loading tam, gdzie dotyczy), test Vitest i wpis w katalogu `/design-system`; kolory i odstępy wyłącznie przez tokeny (klasy Tailwind z `@theme`), bez wartości surowych; teksty przez next-intl (komponenty wizualne dostają treść przez propsy). Katalog jest jedynym miejscem przeglądu systemu (bez Storybooka, bez dodatkowych narzędzi).
 
+## Przepływ weryfikacji (wynika z API i z `/review/`)
+
+Źródła: `src/formgen/api/app.py` (`/analyze-batch`, `/validate` z `sample_values`, `/ready` degraded) oraz istniejące UI `src/formgen/static/review/` (zachowanie do odwzorowania w nowej aplikacji, bez kopiowania kodu). Szkice w FigCraft: `Phone/ResultSource`, `Phone/ReviewFields`, `Tablet/ReviewSplit` (sesja ulotna, opis poniżej jest wiążący).
+
+Przepływ: Wczytaj lub Otwórz (PDF źródłowy + JSON, bez API) → Wynik → zakładka **Źródło** (PDF obok pól; strony, tekst strony) → zakładka **Przegląd** (tryb „Przegląd wszystkich pól”, także ukrywanych warunkowo, albo „Symulacja” z odpowiedziami i warunkami JSONata) → przy polu: **edycja** (zmiana tytułu, zmiana typu z listy `typeChoices`, usunięcie z domknięciem luki w siatce), **uwaga do pola**, **zgłoszenie brakującego pola** (uwaga z lokalizacją „strona/miejsce w PDF”) → **Waliduj strukturę** (`/validate`) i **Waliduj wartości** (`sample_values` → `sample_errors`, `sample_unknown`) → **Pobierz czysty JSON** (`konfiguracja-<sha12>.json`) i **Pobierz raport uwag** (`raport-<sha12>.json`).
+
+Raport (zgodny z `/review/`): `reportVersion: 2`, `configurationSha256`, `baseConfigurationSha256`, `editedByClerk`, `edits` (wpisy `rename` {techName, from, to}, `retype` {techName, from, to}, `delete` {techName, removed[]}), `hashMethod` (SHA-256 z JSON UTF-8 z posortowanymi kluczami obiektów i zwartymi separatorami, kolejność tablic zachowana), `configurationTitle`, `provenance`, `sourcePdfName`, `createdAt`, `annotations` (`kind` `field` lub `missing`, `field` {title, techName, key, deleted}, `location`, `text`). Uwagi podążają za żywym polem (po edycji aktualizują `key`, po usunięciu `deleted: true`). Uwagi i edycje żyją w pamięci karty; przed wczytaniem innej konfiguracji aplikacja ostrzega o niezapisanym raporcie.
+
+Wsad: pliki do `/analyze-batch` (maks. `max_batch_files`, domyślnie 20; powyżej `TOO_MANY_FILES` 413), przetwarzane po kolei; odpowiedź `results[]` z `filename`, `status`, `form` albo `error`, oraz `ok` i `failed`. Widok „Pliki wsadu”: podsumowanie („18 z 20 gotowych”), wiersze z wynikiem lub błędem (`Otwórz`, `Ponów`), dodawanie kolejnych plików. Pojedyncze pliki z kolejki nadal idą do `/analyze` po kolei.
+
+Dodatkowe trasy: `/results/[id]/source`, `/results/[id]/review`, `/batch`. `/open` przyjmuje PDF źródłowy i JSON naraz.
+
 ## Wymagania jakościowe
 Dostępność WCAG AA (kontrast z tokenów, fokus, role ARIA, cele dotykowe ≥ 44 px, obsługa klawiatury); brak surowych kolorów poza tokenami; wszystkie teksty UI w katalogach PL/EN (test: te same klucze w obu językach); brak CDN i zewnętrznych żądań w runtime; brak sekretów w repo; HTML z opisów FormDefinition czyszczony przed `dangerouslySetInnerHTML` (usunięcie `<script>`, atrybutów `on*`, `javascript:`).
 

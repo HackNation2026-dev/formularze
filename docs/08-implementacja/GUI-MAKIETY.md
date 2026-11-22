@@ -1,7 +1,7 @@
 ---
 wersja: 0.1.0
 aktualizacja: 2026-11-21
-status: makiety gotowe w sesji FigCraft; plik .figcraft poza repo
+status: opis i tokeny w repo; sesja FigCraft z makietami utracona (restart silnika 2026-11-22)
 ---
 
 # Makiety GUI (FigCraft)
@@ -10,7 +10,7 @@ Projekt: [specyfikacja](../superpowers/specs/2026-11-21-makiety-gui-design.md), 
 
 ## Stan i ograniczenia
 
-- Makiety istnieją w sesji FigCraft `formularze-gui` (6 stron). Silnik FigCraft działa w sandboxie bez dostępu do systemu plików repo, więc pliku `design/formularze-gui.figcraft` nie ma w Git, a repo nie zawiera zrzutów makiet. Autor sesji udostępnia ją lokalnie (`collab.host`, adres `127.0.0.1:47900`, link z tokenem przekazywany poza repo); po dołączeniu w aplikacji FigCraft plik zapisuje się jako `design/formularze-gui.figcraft`.
+- Makiety (6 stron, 25 komponentów, 18 ekranów w 4 wariantach) istniały w sesji FigCraft `formularze-gui` i zostały **utracone** po restarcie silnika FigCraft 2026-11-22: silnik nie zapisuje do repo, a plik `.figcraft` nigdy nie trafił do Git. Ten dokument, `design/tokens.*` i test to jedyne zachowane źródło; kod `apps/web/` odtwarza widoki z opisu. Nowy przepływ weryfikacji ma tylko szkice (3 ekrany w nowej, też ulotnej sesji).
 - Opisy ramek poniżej (stany, prototyp, warianty) potwierdził autor na zrzutach z sesji; do czasu zapisania pliku nie da się ich sprawdzić z samego repo. Z repo sprawdzają się tylko tokeny (`tests/test_gui_tokens.py`).
 - `design/tokens.json` zawiera kolekcje `Theme` i `Scale` i powstaje z `design/tokens.css` skryptem `scripts/gui_tokens_from_css.py`. Typografię (Inter, Source Code Pro, style `Text/*`) opisuje ta sekcja, bez pliku; `Lang` jest tylko w FigCraft.
 - Teksty interfejsu (około 125 par PL/EN) są w kolekcji zmiennych `Lang`, bez eksportu do repo. Klucze mają prefiksy: `login/`, `upload/`, `queue/`, `details/`, `val/`, `prev/`, `load/`, `set/`, `st/`, `nav/`, `tab/`, `badge/`, `btn/`, `row/`, `field/`.
