@@ -105,7 +105,7 @@ def test_disk_cache_not_written_for_invalid_answer(tmp_path):
 
 
 def test_make_client_passes_cache_dir_from_settings(tmp_path):
-    from formgen.api.settings import Settings
+    from formgen.config import Settings
     from formgen.extract.llm_client import make_client
 
     c = make_client(Settings(_env_file=None, llm_cache_dir=str(tmp_path), llm_fallback_base_url="http://local"))

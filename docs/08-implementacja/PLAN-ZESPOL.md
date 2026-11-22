@@ -16,7 +16,7 @@ Dwie sesje agenta nigdy w jednym katalogu: `git worktree add ../formularze-<nazw
 
 ## Strumień A. Frontend (1–2 osoby, punkty IV + intuicyjność 20%)
 Stan: interfejs `/review/` jest w repo ([UI-PRZEGLAD](UI-PRZEGLAD.md)). Pokrywa kroki 1–4, w tym wsad wielu plików w dowolnym formacie API (podgląd źródła tylko dla PDF). Dalsza praca rozbudowuje go zamiast zaczynać od nowa.
-Spec: `docs/08-implementacja/FRONTEND-BRIEF.md`. Biblioteka JSONata już w `src/formgen/static/vendor/`.
+Spec: `docs/08-implementacja/FRONTEND-BRIEF.md`. JSONata dla UI: `npm run ui:assets` -> `src/formgen/static/review/vendor/`.
 Kolejność:
 1. Upload + lista plików + status + pobranie JSON (pół dnia).
 2. Wizualizacja JSON jako e-usługa: karty sekcji, typy pól, taby, przyciski Wstecz/Dalej (pół dnia).

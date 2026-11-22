@@ -11,7 +11,7 @@ import itertools
 from dataclasses import dataclass
 from enum import StrEnum
 
-from formgen.compose.dictionaries import SELECT_ONLY
+from formgen.schema.dictionaries import SELECT_ONLY
 from formgen.schema.jsonata_lint import lint_query, state_cycles
 from formgen.schema.model import (
     CONTAINER_TYPES,

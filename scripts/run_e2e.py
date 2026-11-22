@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 from formgen import pipeline
-from formgen.api.settings import Settings
+from formgen.config import Settings
 from formgen.eval.metric import compare
 from formgen.extract import LlmExtractor
 from formgen.extract.llm_client import make_client

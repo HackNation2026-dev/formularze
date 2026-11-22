@@ -15,15 +15,15 @@ from formgen.schema.model import FieldType
 if TYPE_CHECKING:
     from formgen.compose.spec import FieldSpec
 
-WOJEWODZTWO = "Województwo"
-POWIAT = "Powiat"
-GMINA = "Gmina"
-MIEJSCOWOSC = "Miejscowość"
-KRAJE = "Kraje"
-NUMERY_KIERUNKOWE = "Numery kierunkowe"
-
-# every predefined dictionary may only be attached to a drop-down list (SELECT)
-SELECT_ONLY: frozenset[str] = frozenset({WOJEWODZTWO, POWIAT, GMINA, MIEJSCOWOSC, KRAJE, NUMERY_KIERUNKOWE})
+from formgen.schema.dictionaries import (  # noqa: F401  (re-exported for callers of this module)
+    GMINA,
+    KRAJE,
+    MIEJSCOWOSC,
+    NUMERY_KIERUNKOWE,
+    POWIAT,
+    SELECT_ONLY,
+    WOJEWODZTWO,
+)
 
 # label pattern -> dictionary, checked in order (first match wins)
 _LABEL_RULES: tuple[tuple[re.Pattern[str], str], ...] = (

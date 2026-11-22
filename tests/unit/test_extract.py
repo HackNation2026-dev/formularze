@@ -230,7 +230,7 @@ def test_noise_sections_empty_labels_dropped_and_pages_capped():
 
 
 def test_invalid_chunk_is_split_then_skipped_not_fatal():
-    from formgen.api.settings import Settings
+    from formgen.config import Settings
     from formgen.extract.extractor import LlmExtractor
     from formgen.ingest.model import Document, Line, Page
 

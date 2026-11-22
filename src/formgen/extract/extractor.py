@@ -7,9 +7,9 @@ import re
 
 from rapidfuzz import fuzz
 
-from formgen.api.settings import Settings
 from formgen.compose.dictionaries import dictionary_for, with_proposed
 from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec, PageSpec, SectionSpec
+from formgen.config import Settings
 from formgen.extract.llm_client import LlmClient, make_client
 from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER, SYSTEM
 from formgen.extract.schema import LlmChunk, LlmGlobal, LlmSection
