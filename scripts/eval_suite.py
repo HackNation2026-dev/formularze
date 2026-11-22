@@ -278,19 +278,23 @@ def score_form(name: str, units: list[Unit]) -> dict:
     }
     if golden_path.exists():
         golden = FormDefinition.from_json_dict(json.loads(golden_path.read_text(encoding="utf-8")))
-        comps, subj = [], []
+        comps, subj, logic = [], [], []
         for u in units:
             if u.form_def is None:
                 comps.append(0.0)
                 subj.append(0.0)
+                logic.append(0.0)
                 continue
             r = compare(u.form_def, golden)
             no_err = not any(v.severity == Severity.ERROR for v in check_rules(u.form_def))
             comps.append(r.composite(validator_pass=no_err))
             subj.append(r.f1_subject)
+            logic.append(r.show_logic)
         row["golden"] = statistics.mean(comps)
         # informational: F1 on subject tabs only (template tabs score ~1.0 for free); not part of "score"
         row["golden_f1_subject"] = statistics.mean(subj)
+        # informational: golden SHOW conditions whose logic we reproduce on the same answer vectors
+        row["golden_show_logic"] = statistics.mean(logic)
         row["golden_per_fmt"] = {u.fmt: round(c, 3) for u, c in zip(units, comps, strict=True)}
     labels = {u.fmt: [f.title for f in subject_fields(u.form_def)] if u.form_def else [] for u in units}
     pairs = list(combinations(labels, 2))
