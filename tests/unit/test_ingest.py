@@ -51,6 +51,31 @@ def test_docx_16_pages_form09_glyph_checkboxes():
     assert "Dane reprezentanta klubu sportowego" in text
 
 
+def test_xlsx_choice_list_matches_pdf_form03():
+    """Sheet cells hold no box glyphs; the option rows under a 'prompt:' row get the same ☐ markers as the PDF."""
+    form = EVAL / "03_wydanie_zaswiadczenia"
+
+    def choices(ext):
+        doc = load((form / f"Wniosek o wydanie zaświadczenia.{ext}").read_bytes(), ext)
+        return [ln.split("____")[0].strip() for ln in doc.to_prompt_text().splitlines() if ln.startswith("☐")]
+
+    assert len(choices("xlsx")) == 5
+    assert choices("xlsx") == choices("pdf")
+
+
+def test_xlsx_fill_rows_after_prompt_are_not_choices():
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    for row in ("Dane wnioskodawcy:", "Imię i nazwisko ……………………", "Adres ……………………", "Telefon ……………………"):
+        wb.active.append([row])
+    buf = io.BytesIO()
+    wb.save(buf)
+    assert "☐" not in load(buf.getvalue(), "xlsx").to_prompt_text()
+
+
 def test_image_ocr_form05():
     path = next(REF.glob("*.PNG"))
     doc = load(path.read_bytes(), "png")
