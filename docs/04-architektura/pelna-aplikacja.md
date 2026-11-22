@@ -1,10 +1,18 @@
 ---
-wersja: 0.3.0
-aktualizacja: 2026-11-21
-status: propozycja autora; wynik konsultacji Fable w docs/07-decyzje/konsultacja-fable.md
+wersja: 0.4.0
+aktualizacja: 2026-11-22
+status: propozycja historyczna (2026-11-21); nie opisuje stanu kodu
 ---
 
 # Pełna aplikacja i wybór interfejsu
+
+> **Stan faktyczny (2026-11-22):** zrealizowano wyłącznie Python/FastAPI (`src/formgen/`). Frontend React/TypeScript
+> ani Rust nie powstały; interfejs przeglądu `GET /review/` to HTML + moduły ES bez frameworka
+> (`src/formgen/static/review/`, zasoby PDF.js i JSONata budowane z `package-lock.json` w `Dockerfile`).
+> Podziału monorepo `apps/web`, `apps/backend`, `packages/contracts`, `infra/` nie ma: jedno repozytorium z
+> `src/`, `scripts/`, `tests/`, `compose.yaml`. Opis działającej aplikacji:
+> [08-implementacja/architektura.md](../08-implementacja/architektura.md). Tekst poniżej zachowano jako zapis
+> rozważań sprzed implementacji.
 
 Minimum konkursowe COI to backend REST API przyjmujący formularz i zwracający konfigurację JSON. Frontend importu i podgląd wygenerowanej e-usługi są rozszerzeniami. Pełny produkt rekomenduję jako aplikację z backendem i interfejsem przeglądarkowym: dokument źródłowy, wynik JSON oraz działający podgląd formularza.
 
@@ -18,7 +26,7 @@ egui działa natywnie i w przeglądarce przez WebAssembly; nie jest rozwiązanie
 
 ## Docker i podział monorepo
 
-Docelowo: `apps/web/` dla React/TypeScript, `apps/backend/` dla API i CLI, `packages/contracts/` dla kontraktów oraz `infra/` dla konfiguracji Docker. Te katalogi są planem; implementacji jeszcze nie ma. Nie dodajemy teraz pustych serwisów ani pozornego działającego Compose. Modele i klucze pozostają poza Git. Osobna baza i kolejka dopiero po wykazaniu potrzeby.
+Plan z 21.11: `apps/web/` dla React/TypeScript, `apps/backend/` dla API i CLI, `packages/contracts/` dla kontraktów oraz `infra/` dla konfiguracji Docker. Tego podziału nie wdrożono (patrz uwaga o stanie faktycznym na górze). Nie dodajemy teraz pustych serwisów ani pozornego działającego Compose. Modele i klucze pozostają poza Git. Osobna baza i kolejka dopiero po wykazaniu potrzeby.
 
 ## Decyzja i konsekwencje
 

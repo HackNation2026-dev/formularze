@@ -1,34 +1,46 @@
 ---
-wersja: 0.3.0
-aktualizacja: 2026-11-21
-status: dokumentacja przygotowawcza
+wersja: 0.4.0
+aktualizacja: 2026-11-22
+status: indeks; propozycje historyczne + wskaźnik na stan faktyczny
 ---
 
-# Architektura COI — propozycja
+# Architektura COI
 
-Stan: propozycja do implementacji.
+## Stan faktyczny (kod na `develop`)
+
+Autorytatywny opis działającej aplikacji, ze schematem potoku i ścieżkami modułów przy każdym pudełku:
+[docs/08-implementacja/architektura.md](../08-implementacja/architektura.md). Podział na moduły, ich kontrakty i
+miary: [MODULY.md](../08-implementacja/MODULY.md). Kontrakt REST i konfiguracja: `README.md` (sekcje „Konfiguracja”
+i „REST API”) oraz [SPEC.md](../08-implementacja/SPEC.md).
+
+W skrócie, co istnieje: jeden serwis Python 3.14 / FastAPI (`src/formgen/`) z potokiem
+`ingest -> extract (LLM przez llama.cpp z gramatyką JSON, fallback heurystyczny) -> compose (deterministyczny
+szablon COI) -> schema (reguły techniczne)`, kontenery `api`, `llm`, `tika` w `compose.yaml`, interfejs przeglądu
+`/review/` w czystych modułach ES serwowanych przez API. Nie ma osobnego frontendu React/TypeScript, Rusta,
+bazy ani kolejki.
+
+## Propozycje sprzed implementacji (historyczne, 2026-11-21)
+
+Poniższa tabela i pliki w tym katalogu zapisują stan rozważań przed napisaniem kodu. Zostawiamy je jako ślad
+decyzji; nie opisują aplikacji.
 
 ```text
-GUI TypeScript -> REST API -> adapter wejścia -> analiza dokumentu
+(propozycja) GUI TypeScript -> REST API -> adapter wejścia -> analiza dokumentu
               -> wewnętrzny model formularza -> mapowanie COI
               -> walidacja struktury i reguł -> JSON + podgląd e-usługi
-Model/OCR i wszystkie zasoby potrzebne podczas analizy: lokalne
 ```
 
-| Warstwa | Propozycja | Warunek |
+| Warstwa | Propozycja (21.11) | Co zrealizowano |
 |---|---|---|
-| API | Rust/Axum, jeśli gotowa baza; alternatywnie Python/FastAPI | Rust nie może opóźniać zakresu |
-| Analiza i adaptery | Python 3.14+ | formaty i zgodność paczki |
-| Model | lokalny, po pomiarze jakości, RAM i czasu | brak usług zewnętrznych |
-| GUI | TypeScript | import i wynik obok źródła |
-| Dostarczenie | Docker Compose | wersjonowane obrazy, ograniczone uprawnienia |
+| API | Rust/Axum albo Python/FastAPI | Python/FastAPI (`src/formgen/api/`) |
+| Analiza i adaptery | Python 3.14+ | tak (`src/formgen/ingest/`, `extract/`) |
+| Model | lokalny, po pomiarze | Qwen3.5-4B GGUF w llama.cpp; dopuszczony ten sam otwarty model w chmurze z lokalnym zapasem |
+| GUI | TypeScript | `/review/`: HTML + moduły ES bez frameworka (`src/formgen/static/review/`) |
+| Dostarczenie | Docker Compose | `compose.yaml`: `api`, `llm`, `tika`; obrazy przypięte, non-root, read-only |
 
-Nie wymagamy dodatkowej bazy ani kolejki na etapie prototypu. Pliki użytkowników przetwarzaj tylko tymczasowo. Limity i błędy adapterów muszą być jawne. Zasoby modelu przygotuj przed pokazem; działanie aplikacji nie może zależeć od pobierania ich z sieci.
+Zasady, które przetrwały: brak bazy i kolejki; plik użytkownika tylko w pamięci na czas żądania; limity i błędy
+adapterów jawne (`README.md`, kody błędów); zasoby modelu przygotowane przed pokazem (`make models`), bez pobierania
+w czasie działania; licencje bez copyleft ([LICENSES.md](../08-implementacja/LICENSES.md)).
 
-Przed wyborem narzędzi do PDF i konwersji DOC sprawdź licencje komponentów i zależności. Popularność biblioteki nie potwierdza zgodności z wykluczeniem copyleft. Nie wskazano jeszcze zatwierdzonego zestawu bibliotek.
-
-Zobacz [pełną aplikację i wybór interfejsu](pelna-aplikacja.md).
-
-## Proponowany stos
-
-[Proponowany stos](proponowany-stos.md) — status: PROPONOWANY, nie decyzja zespołu. Wersja 0.3.0.
+- [Pełna aplikacja i wybór interfejsu](pelna-aplikacja.md) — historyczna propozycja React/TypeScript vs egui.
+- [Proponowany stos](proponowany-stos.md) — status PROPONOWANY (nie decyzja zespołu), z adnotacją o stanie faktycznym.

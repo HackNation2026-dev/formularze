@@ -14,11 +14,11 @@ Wersja: 0.4.0. Organizacja docelowa: `HackNation2026-dev`.
 | [01 — Zadanie](01-zadanie/README.md) | cel, punktacja i oryginalne dokumenty |
 | [02 — Materiały](02-materialy/README.md) | pliki organizatora, pochodzenie, manifest |
 | [03 — Wymagania](03-wymagania/README.md) | warunki odbioru i kontrakt wyniku |
-| [04 — Architektura](04-architektura/README.md) | proponowany stos i podział komponentów |
+| [04 — Architektura](04-architektura/README.md) | propozycje sprzed implementacji (historyczne) i wskaźnik na stan faktyczny w 08 |
 | [05 — Weryfikacja](05-weryfikacja/README.md) | plan testów i stan wykonania |
 | [06 — Prezentacja](06-prezentacja/README.md) | demo, slajdy i zgłoszenie |
 | [07 — Decyzje](07-decyzje/README.md) | decyzje, konflikty i pytania do mentorów |
-| [08 — Implementacja](08-implementacja/PROBLEM.md) | problem, kontrakt API, architektura, research i pomiary, ewaluacja, ustawienie na obronę, plan zespołu |
+| [08 — Implementacja](08-implementacja/PROBLEM.md) | problem, kontrakt API, [architektura zgodna z kodem](08-implementacja/architektura.md), [moduły](08-implementacja/MODULY.md), research i pomiary, ewaluacja, ustawienie na obronę, plan zespołu |
 
 Nazwy plików źródłowych zachowano. Większe zestawy znajdziesz przez rejestr materiałów, nie przez ręczne przeglądanie całego repo.
 
