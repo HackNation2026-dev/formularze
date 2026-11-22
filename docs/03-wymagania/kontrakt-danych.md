@@ -1,6 +1,6 @@
 ---
 wersja: 0.1.0
-aktualizacja: 2026-11-21
+aktualizacja: 2026-11-22
 status: dokumentacja przygotowawcza
 ---
 
@@ -24,4 +24,4 @@ Korzeń: `title`, `tabs`, `flow`. Zakładki zawierają pytania z pozycją `x`, `
 
 Typy z reguł obejmują TEXT_FIELD, CHECKBOX, NUMBER, CONSENT_SECTION, SELECT, TEXTAREA, FILE_UPLOADER, RADIO, DATEPICKER, TEXT_BLOCK, INFO_SECTION, SECTION i REPEATING_SECTION.
 
-Oryginalny JSON Schema nie egzekwuje wszystkich reguł biznesowych; walidator semantyczny powinien być osobnym etapem. Literówki `repetingSectionGrid` / `repeatingSectionGrid` i `CONSENT_SECTIOM` opisano w [rozbieżnościach](../07-decyzje/rozbieznosci.md). Nie poprawiaj oryginałów bez zapisanej decyzji.
+Oryginalny JSON Schema nie egzekwuje wszystkich reguł biznesowych; walidator semantyczny jest osobnym etapem: `check_rules()` w `src/formgen/schema/rules.py` i lint JSONata w `src/formgen/schema/jsonata_lint.py` (stan 22.11). Literówki `repetingSectionGrid` / `repeatingSectionGrid` i `CONSENT_SECTIOM` opisano w [rozbieżnościach](../07-decyzje/rozbieznosci.md). Nie poprawiaj oryginałów bez zapisanej decyzji.

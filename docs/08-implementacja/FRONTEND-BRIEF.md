@@ -1,10 +1,17 @@
 ---
 wersja: 0.4.0
-aktualizacja: 2026-11-21
-status: implementacja
+aktualizacja: 2026-11-22
+status: brief historyczny (21.11); zrealizowany jako /review/
 ---
 
 # Frontend – brief dla zespołu (rozszerzenia IV i V zadania)
+
+> **Stan faktyczny (22.11):** brief zrealizowano inaczej niż opisano poniżej. Interfejs działa pod `GET /review/`
+> (`src/formgen/static/review/`, montaż w `src/formgen/api/app.py`); `GET /` i pliki `src/formgen/static/index.html`,
+> `app.js`, `style.css` nie istnieją. JSONata i PDF.js nie leżą w repo: `npm run ui:assets` (lokalnie) albo etap Node
+> w `Dockerfile` kopiuje je z `package-lock.json` do `src/formgen/static/review/vendor/`. Opis i scenariusz:
+> [UI-PRZEGLAD.md](UI-PRZEGLAD.md). Osobne GUI Next.js: `apps/web/` ([ADR-002](../07-decyzje/ADR-002-gui-nextjs.md)).
+> Tekst poniżej to brief z 21.11.
 
 Cel: jedna statyczna strona serwowana przez FastAPI pod `GET /` (bez build stepu, bez CDN w runtime – aplikacja działa offline).
 Pliki: `src/formgen/static/index.html`, `app.js`, `style.css`, `vendor/jsonata.min.js` (już jest, MIT, oficjalny build JSONata 2.x).
