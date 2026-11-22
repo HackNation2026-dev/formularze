@@ -132,6 +132,7 @@ class LlmClient:
                 "completion_tokens": usage.get("completion_tokens"),
                 "finish": finish,
                 "endpoint": self.base_url,
+                "timings": data.get("timings") or {},
             }
         )
         log.info(

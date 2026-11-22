@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +19,7 @@ from formgen.api.errors import ApiError
 from formgen.api.security import require_auth
 from formgen.api.upload import ValidUpload, validate_upload
 from formgen.config import Settings, get_settings
+from formgen.extract.extractor import warm_up
 from formgen.extract.llm_client import make_client
 from formgen.schema import FormDefinition, Severity, check_rules, check_sample_values
 
@@ -58,6 +61,24 @@ def _header_value(text: str, limit: int = 1000) -> str:
     return re.sub(r"[^\x20-\x7e]", "?", text)[:limit]
 
 
+def _warm_up_llm(st: Settings, wait_seconds: float = 600.0) -> None:
+    """Wait for the LLM server, then prefill the prompts' shared instruction prefix into its prompt cache."""
+    client = make_client(st)
+    deadline = time.monotonic() + wait_seconds
+    while not client.alive():
+        if time.monotonic() > deadline:
+            log.warning("LLM warm-up skipped: server not up after %.0f s", wait_seconds)
+            return
+        time.sleep(5)
+    t0 = time.monotonic()
+    try:
+        warm_up(client)
+    except (ConnectionError, TimeoutError) as exc:
+        log.warning("LLM warm-up failed: %s", exc)
+        return
+    log.info("LLM warm-up done in %.1f s", time.monotonic() - t0)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     s = settings or get_settings()
     app = FastAPI(
@@ -69,6 +90,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     if settings is not None:
         app.dependency_overrides[get_settings] = lambda: settings
+    if s.extractor == "llm" and s.llm_warm_up:
+        threading.Thread(target=_warm_up_llm, args=(s,), name="llm-warm-up", daemon=True).start()
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError) -> JSONResponse:

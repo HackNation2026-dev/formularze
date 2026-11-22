@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     llm_timeout_seconds: int = 600
     # context of ONE server slot (llama.cpp -c / -np); prompt + answer of a chunk call must fit in it
     llm_context_tokens: int = 8192
+    # LLM calls of one form in flight at once (global + chunks); llama.cpp batches their decode steps into one pass
+    # over the weights. Keep llm_parallel * llm_context_tokens <= the server's --ctx-size (shared KV pool).
+    llm_parallel: int = 2
+    # prefill the instruction prefixes on the LLM server once at API start (compose turns it on)
+    llm_warm_up: bool = False
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited
     ocr_base_url: str | None = None
     doc_converter_url: str | None = None  # Apache Tika sidecar for .doc

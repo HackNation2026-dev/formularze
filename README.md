@@ -22,6 +22,28 @@ Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG
 8. [Decyzje i pytania](docs/07-decyzje/README.md)
 9. [Implementacja: problem, kontrakt API, research, pomiary](docs/08-implementacja/PROBLEM.md)
 
+## Zgłoszenie
+
+**Tytuł:** Formularze – cyfryzacja papierowych formularzy urzędowych do e-usług COI z otwartym modelem na własnej infrastrukturze.
+
+**Opis:** Urzędnik wgrywa blankiet (PDF, DOC, DOCX, ODS, XLSX, JPG, PNG) i dostaje gotową konfigurację JSON e-formularza
+dla Generatora Formularzy COI. Parsery formatów budują model dokumentu, lokalny otwarty model językowy (Qwen3.5-4B,
+llama.cpp) wyodrębnia wyłącznie przedmiot wniosku, a deterministyczny kompilator szablonów dokłada strony i sekcje
+wymagane standardem COI (dane wnioskodawcy, kontakt, zgody, strona końcowa), słowniki COI, warunki widoczności JSONata
+i walidatory (PESEL, NIP, REGON, kod pocztowy, dowód). Każdy wynik przechodzi walidator reguł technicznych, więc usługa
+nigdy nie zwraca JSON-a łamiącego zasady COI. Interfejs `/review/` pokazuje wynik obok źródła, symuluje e-usługę,
+pozwala poprawić pola i pobrać czysty JSON z raportem. Całość działa w Dockerze bez usług zewnętrznych; ten sam model
+może stać lokalnie na CPU albo na własnym serwerze GPU (jeden przełącznik `LLM_BASE_URL`).
+
+| Element zgłoszenia | Gdzie |
+|---|---|
+| Kod i README | to repozytorium, gałąź `main` |
+| Wynikowe JSON-y dla formularzy do oceny (7) i wzorcowych (2) | `data/output/` |
+| Prezentacja (max 10 slajdów, PDF) | `docs/06-prezentacja/` (treść: `SLAJDY-I-FILM.md`) |
+| Film (max 3 min) | `docs/06-prezentacja/` (scenariusz z minutażem: `SLAJDY-I-FILM.md`) |
+| Architektura | `docs/04-architektura/`, `docs/08-implementacja/architektura.md` |
+| Stan projektu i znane ograniczenia | `docs/08-implementacja/STAN-PROJEKTU.md` |
+
 ## Kontrola dokumentacji
 
 ```bash
@@ -100,7 +122,10 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
 | `LLM_API_KEY` | – | klucz do endpointu w chmurze (Bearer), tylko w runtime |
 | `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_MODEL` | – | zapas, zwykle lokalny `http://llm:8080`; używany po pierwszej awarii głównego endpointu |
 | `LLM_CACHE_DIR` | – | tylko ewaluacja: cache sparsowanych odpowiedzi modelu na dysku; nie ustawiać w produkcji |
-| `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | tesseract / rapidocr / unlimited (sidecar GPU) |
+| `LLM_CONTEXT_TOKENS` | 8192 | kontekst jednego slotu llama.cpp; budżet odpowiedzi chunku = kontekst − prompt, poniżej 1024 tokenów chunk jest dzielony |
+| `LLM_PARALLEL` | 2 | wywołania LLM jednego formularza w locie naraz (globalne + chunki); `LLM_PARALLEL × LLM_CONTEXT_TOKENS` ≤ `--ctx-size` serwera |
+| `LLM_WARM_UP` | false (compose: true) | po starcie API prefilluj wspólny prefiks promptów w cache serwera LLM |
+| `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | zarezerwowane; kod OCR używa wyłącznie Tesseracta (`pol`) z obrazu `api`, wartości raportuje tylko `/ready` |
 | `DOC_CONVERTER_URL` | – | Apache Tika dla `.doc` |
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
@@ -133,12 +158,12 @@ Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtrac
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `8a34858` | x86, bez GPU | 15/15; analiza przez lokalny model 98 s |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `d3f0b65` (22.11 08:40) | x86, bez GPU | 15/15; analiza formularza 05 przez lokalny model 85 s (przed #48/#49/#52: 98–232 s) |
 | Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
 | SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
 | Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
 | Qwen3.5-4B Q4, generacja | M4 Metal / GTX 1660 Ti / CPU x86 | 12 / 59 / ok. 11 tok/s |
-| 9 formularzy do oddania (`data/output/`) | GPU przez tunel | 0 błędów reguł; 15–323 s na formularz |
+| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, bez fallbacku heurystycznego) | GPU (Tailscale) | 0 błędów reguł w 9/9; 29–300 s na formularz; golden F1 01 0,864 / 05 0,843 |
 | Tryb bez modelu (`EXTRACTOR=heuristic`) | – | JSON zawsze poprawny; przedmiot wniosku słabszy |
 
 Szczegóły: `docs/08-implementacja/research/` (badania i pomiary), `docs/08-implementacja/DEMO-SETUP.md` (ustawienie na obronę).

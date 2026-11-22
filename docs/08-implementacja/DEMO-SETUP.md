@@ -1,6 +1,6 @@
 ---
 wersja: 0.4.0
-aktualizacja: 2026-11-21
+aktualizacja: 2026-11-22
 status: implementacja
 ---
 
@@ -25,6 +25,7 @@ Maszyna jury: x86, bez GPU (mentor, 21.11). Model w chmurze dozwolony, jeśli ot
 4. Pokazać na slajdzie: ten sam otwarty model lokalnie w Dockerze i w chmurze, jeden przełącznik `LLM_BASE_URL`.
 
 ## Ryzyka
+- Darmowy tunel `trycloudflare.com` zrywa żądanie po 100 s (HTTP 524). Pojedynczy formularz na obronie mieści się w limicie (2 wywołania równolegle, GPU ok. 25 tok/s na slot), ale długi fragment (formularz 06, 09) albo kilka formularzy naraz może go przekroczyć. Wtedy klient przechodzi na lokalny model CPU (zapas 1). Wsady generujemy po Tailscale (`http://100.111.226.49:18081`), nie przez tunel. Pomiar 22.11: wsad 2 x 2 wywołania przez tunel dał 524 na jednym fragmencie.
 - Komputer z GPU musi być włączony i online przez całą obronę; łącze w górę bez znaczenia (ruch to kilobajty).
 - Adres `trycloudflare.com` jest losowy i bez gwarancji dostępności. Jeśli zespół ma konto Cloudflare albo ngrok, lepszy stały adres.
 - 6 GB VRAM mieści tylko model 4B. Większy model (9B, Bielik 11B) wymagałby karty z 12+ GB, np. RunPod A5000 (~1,3 zł/h), ten sam skrypt z innym obrazem.
