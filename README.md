@@ -8,7 +8,7 @@ Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja: `H
 
 ## Stan
 
-Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 196 testów (`make test`) i testy Playwright interfejsu. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
+Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 224 testów (`make test`) i 12 testów Playwright interfejsu `/review/`; osobna aplikacja GUI `apps/web` (Next.js) ma własne testy i CI `web.yml`. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
 
 ## Zacznij tutaj
 
@@ -102,10 +102,18 @@ Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.
 ```bash
 npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
 make run                         # http://localhost:8000/review/
-npm run check:ui && npm run test:ui   # składnia, format, zasoby; 15 testów Playwright (Chrome)
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 12 testów Playwright (Chrome)
 ```
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
+
+## Aplikacja GUI `apps/web` (Next.js)
+
+Druga warstwa interfejsu nad tym samym REST API ([ADR-002](docs/07-decyzje/ADR-002-gui-nextjs.md)): logowanie tokenem, kolejka analizy wielu plików, kolorowany JSON, walidacja, podgląd e-usługi ze stanami JSONata, import JSON z dysku, PL/EN. Działa z mockiem API albo z backendem z tego repo. Nie jest częścią obrazu Docker backendu. Szczegóły i trasy: [apps/web/README.md](apps/web/README.md).
+
+```bash
+cd apps/web && npm ci && npm run dev     # http://localhost:3000/pl ; backend: NEXT_PUBLIC_API_MODE=api i NEXT_PUBLIC_API_BASE=http://localhost:8000 w .env.local
+```
 
 ## Konfiguracja
 
