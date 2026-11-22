@@ -1,0 +1,22 @@
+{
+  "title": "Form generator",
+  "todo": "TODO W3",
+  "home": "Home",
+  "login": "Sign in",
+  "upload": "Upload files",
+  "open": "Open JSON",
+  "settings": "Settings",
+  "design-system": "Component catalogue",
+  "json": "JSON result",
+  "validation": "Validation",
+  "preview": "Service preview",
+  "notFound": "Page not found",
+  "error": "Something went wrong",
+  "retry": "Try again",
+  "language": "Language",
+  "theme": "Theme",
+  "light": "Light",
+  "dark": "Dark",
+  "system": "System",
+  "loading": "Starting application"
+}

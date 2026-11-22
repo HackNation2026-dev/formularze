@@ -1,0 +1,7 @@
+{
+  "title": "Open JSON",
+  "description": "Load a form configuration from disk. The file stays in this browser tab and is not sent to the API.",
+  "choose": "Choose JSON file",
+  "invalid": "Could not open the file. Choose a valid JSON form configuration.",
+  "loading": "Loading JSON…"
+}

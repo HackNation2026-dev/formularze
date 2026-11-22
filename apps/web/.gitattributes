@@ -1,0 +1,2 @@
+# Kopie materiałów muszą zachować oryginalne końce linii i odstępy.
+src/mocks/fixtures/*.json -text whitespace=-blank-at-eol,cr-at-eol

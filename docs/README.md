@@ -19,6 +19,7 @@ Wersja: 0.4.0. Organizacja docelowa: `HackNation2026-dev`.
 | [06 — Prezentacja](06-prezentacja/README.md) | demo, slajdy i zgłoszenie |
 | [07 — Decyzje](07-decyzje/README.md) | decyzje, konflikty i pytania do mentorów |
 | [08 — Implementacja](08-implementacja/PROBLEM.md) | problem, kontrakt API, architektura, research i pomiary, ewaluacja, ustawienie na obronę, plan zespołu |
+| [GUI — makiety i aplikacja `apps/web`](08-implementacja/GUI-MAKIETY.md) | opis widoków, stan wdrożenia i [lista zadań dla kolejnych agentów](08-implementacja/GUI-DO-ZROBIENIA.md); kod: `apps/web/` ([README](../apps/web/README.md)) |
 
 Nazwy plików źródłowych zachowano. Większe zestawy znajdziesz przez rejestr materiałów, nie przez ręczne przeglądanie całego repo.
 
