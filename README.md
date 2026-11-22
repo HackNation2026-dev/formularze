@@ -22,6 +22,28 @@ Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG
 8. [Decyzje i pytania](docs/07-decyzje/README.md)
 9. [Implementacja: problem, kontrakt API, research, pomiary](docs/08-implementacja/PROBLEM.md)
 
+## Zgłoszenie
+
+**Tytuł:** Formularze – cyfryzacja papierowych formularzy urzędowych do e-usług COI z otwartym modelem na własnej infrastrukturze.
+
+**Opis:** Urzędnik wgrywa blankiet (PDF, DOC, DOCX, ODS, XLSX, JPG, PNG) i dostaje gotową konfigurację JSON e-formularza
+dla Generatora Formularzy COI. Parsery formatów budują model dokumentu, lokalny otwarty model językowy (Qwen3.5-4B,
+llama.cpp) wyodrębnia wyłącznie przedmiot wniosku, a deterministyczny kompilator szablonów dokłada strony i sekcje
+wymagane standardem COI (dane wnioskodawcy, kontakt, zgody, strona końcowa), słowniki COI, warunki widoczności JSONata
+i walidatory (PESEL, NIP, REGON, kod pocztowy, dowód). Każdy wynik przechodzi walidator reguł technicznych, więc usługa
+nigdy nie zwraca JSON-a łamiącego zasady COI. Interfejs `/review/` pokazuje wynik obok źródła, symuluje e-usługę,
+pozwala poprawić pola i pobrać czysty JSON z raportem. Całość działa w Dockerze bez usług zewnętrznych; ten sam model
+może stać lokalnie na CPU albo na własnym serwerze GPU (jeden przełącznik `LLM_BASE_URL`).
+
+| Element zgłoszenia | Gdzie |
+|---|---|
+| Kod i README | to repozytorium, gałąź `main` |
+| Wynikowe JSON-y dla formularzy do oceny (7) i wzorcowych (2) | `data/output/` |
+| Prezentacja (max 10 slajdów, PDF) | `docs/06-prezentacja/` (treść: `SLAJDY-I-FILM.md`) |
+| Film (max 3 min) | `docs/06-prezentacja/` (scenariusz z minutażem: `SLAJDY-I-FILM.md`) |
+| Architektura | `docs/04-architektura/`, `docs/08-implementacja/architektura.md` |
+| Stan projektu i znane ograniczenia | `docs/08-implementacja/STAN-PROJEKTU.md` |
+
 ## Kontrola dokumentacji
 
 ```bash
