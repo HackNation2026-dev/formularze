@@ -88,6 +88,7 @@ def _build_page(page: PageSpec, v: bool, taken: set[str]) -> Tab:
     # first pass: resolve tech names so conditions can reference them
     sec_tech: dict[str, str] = {}
     fld_tech: dict[str, tuple[str, str]] = {}  # field tech -> (section tech, field tech)
+    fld_spec: dict[str, FieldSpec] = {}  # resolved field tech -> its spec (for option checks)
     resolved: list[tuple[SectionSpec, str, list[tuple[FieldSpec, str]]]] = []
     for s in page.sections:
         st = unique(s.tech_name or slug(s.title), taken)
@@ -96,6 +97,7 @@ def _build_page(page: PageSpec, v: bool, taken: set[str]) -> Tab:
         for f in s.fields:
             ft = unique(f.tech_name or slug(f.label), taken)
             fld_tech[ft] = (st, ft)
+            fld_spec[ft] = f
             if f.tech_name:
                 fld_tech[f.tech_name] = (st, ft)
             fields.append((f, ft))
@@ -123,6 +125,12 @@ def _build_page(page: PageSpec, v: bool, taken: set[str]) -> Tab:
             if ref is None:
                 continue  # dangling reference: drop silently, validator would flag jsonata otherwise
             sec, fld = ref
+            spec = fld_spec.get(fld)
+            # A literal that is not one of the referenced field's options can never match (JSONATA_LITERAL),
+            # so the owner would stay hidden forever: drop the condition and keep the owner visible.
+            if spec is not None and spec.options and not spec.dictionary and c.value not in spec.options:
+                log.warning("dropping condition of '%s': '%s' is not an option of '%s'", owner, c.value, fld)
+                continue
             if reaches(fld, owner):
                 log.warning("dropping condition of '%s' on '%s': it would make a visibility cycle", owner, fld)
                 continue

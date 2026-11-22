@@ -228,6 +228,32 @@ def _cyclic_spec() -> FormSpec:
     )
 
 
+def test_compose_drops_condition_on_option_the_field_does_not_have():
+    spec = FormSpec(
+        title="x",
+        pages=[
+            PageSpec(
+                title="P",
+                sections=[
+                    SectionSpec(
+                        title="Korespondencja",
+                        fields=[
+                            FieldSpec(label="Sposób", kind=FieldType.RADIO, options=["Poczta", "Osobiście"]),
+                            FieldSpec(label="Adres ePUAP", visible_when=[Condition(field="sposob", value="ePUAP")]),
+                            FieldSpec(label="Adres poczty", visible_when=[Condition(field="sposob", value="Poczta")]),
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+    form = compose(spec)
+    assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
+    fields = {f.techName: f for _, f in form.iter_fields()}
+    assert not fields["adres_epuap"].states, "a condition on a missing option would hide the field forever"
+    assert fields["adres_poczty"].states, "a condition on an existing option survives"
+
+
 def test_rule_flags_condition_cycles():
     form = compose(SPEC_05)
     tab = form.tabs[1]
