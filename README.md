@@ -114,8 +114,8 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 
 | Metoda i ścieżka | Auth | Opis |
 |---|---|---|
-| `POST /api/v1/forms/analyze` | Bearer | `multipart/form-data`, pole `file` (jeden plik). 200: JSON `FormDefinition`. Nagłówki: `X-Processing-Time-Ms`, `X-Detected-Type`, `X-Warnings` |
-| `POST /api/v1/forms/analyze-batch` | Bearer | `multipart/form-data`, pole `files` powtórzone (do `MAX_BATCH_FILES`). Pliki po kolei, każdy z własnym `REQUEST_TIMEOUT_SECONDS`. 200: `{"results": [{"filename", "status", "form" \| "error", "processing_time_ms", "extractor", ...}], "ok", "failed"}`; błąd jednego pliku nie przerywa paczki |
+| `POST /api/v1/forms/analyze` | Bearer | `multipart/form-data`, pole `file` (jeden plik). 200: JSON `FormDefinition`. Nagłówki: `X-Processing-Time-Ms`, `X-Detected-Type`, `X-Warnings`, `X-Partial-Result` (`true`/`false`), `X-Partial-Reasons` (tylko przy `true`) |
+| `POST /api/v1/forms/analyze-batch` | Bearer | `multipart/form-data`, pole `files` powtórzone (do `MAX_BATCH_FILES`). Pliki po kolei, każdy z własnym `REQUEST_TIMEOUT_SECONDS`. 200: `{"results": [{"filename", "status", "form" \| "error", "processing_time_ms", "extractor", "partial", "partial_reasons", ...}], "ok", "failed"}`; błąd jednego pliku nie przerywa paczki |
 | `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
 | `GET /health`, `GET /ready` | – | liveness / readiness (`/ready` pyta LLM: `degraded` gdy działa tylko fallback heurystyczny, 503 gdy fallback wyłączony) |
@@ -127,7 +127,7 @@ detektorem Google magika, musi zgadzać się z rozszerzeniem), `422 PROCESSING_F
 (pipeline nigdy nie zwraca JSON-a łamiącego reguły), `503 MODEL_UNAVAILABLE`, `504 PROCESSING_TIMEOUT`.
 
 Plik jest przetwarzany wyłącznie w pamięci i w katalogu tymczasowym żądania; nic nie jest zapisywane na stałe.
-Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtractor` lub `HeuristicExtractor` po awarii modelu).
+Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtractor` lub `HeuristicExtractor` po awarii modelu). `X-Partial-Result: true` oznacza, że wynik może nie zawierać całego źródła; `X-Partial-Reasons` podaje przyczyny rozdzielone `; `: `chunk-skipped:<strony>` (fragment pominięty po nieudanych próbach), `llm-truncated:<schemat>` (użyta odpowiedź modelu ucięta na limicie tokenów), `extractor-fallback:<błąd>` (przejście na `HeuristicExtractor`). Każda przyczyna zwiększa `X-Warnings` o 1.
 
 ## Pomiary (stan 22.11)
 
