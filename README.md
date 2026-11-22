@@ -62,7 +62,7 @@ może stać lokalnie na CPU albo na własnym serwerze GPU (jeden przełącznik `
 | Kod i README | to repozytorium, gałąź `main` |
 | Wynikowe JSON-y dla formularzy do oceny (7) i wzorcowych (2) | `data/output/` |
 | Prezentacja (max 10 slajdów, PDF) | `docs/06-prezentacja/` (treść: `SLAJDY-I-FILM.md`) |
-| Film (max 3 min) | `docs/06-prezentacja/` (scenariusz z minutażem: `SLAJDY-I-FILM.md`) |
+| Film | [Film konkursowy z polskim lektorem (67 s, MP4)](https://raw.githubusercontent.com/HackNation2026-dev/formularze/2e46e3536d9f2c7e3f94d675132954f5343efbc1/docs/06-prezentacja/HackNation-COI-demo-67s.mp4) |
 | Architektura | `docs/04-architektura/`, `docs/08-implementacja/architektura.md` |
 | Stan projektu i znane ograniczenia | `docs/08-implementacja/STAN-PROJEKTU.md` |
 
