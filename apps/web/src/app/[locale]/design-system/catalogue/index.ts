@@ -10,6 +10,10 @@ import LoginForm from './LoginForm';
 import AppShell from './AppShell';
 import AuthLayout from './AuthLayout';
 import MasterDetail from './MasterDetail';
+import JsonViewer from './JsonViewer';
+import ValidationList from './ValidationList';
+import FormRenderer from './FormRenderer';
+import ResultLayout from './ResultLayout';
 import Button from './Button';
 import IconButton from './IconButton';
 import Icon from './Icon';
@@ -54,6 +58,10 @@ export const catalogue = [
   { name: 'AppShell', layer: 'templates', Component: AppShell },
   { name: 'AuthLayout', layer: 'templates', Component: AuthLayout },
   { name: 'MasterDetail', layer: 'templates', Component: MasterDetail },
+  { name: 'JsonViewer', layer: 'organisms', Component: JsonViewer },
+  { name: 'ValidationList', layer: 'organisms', Component: ValidationList },
+  { name: 'FormRenderer', layer: 'organisms', Component: FormRenderer },
+  { name: 'ResultLayout', layer: 'templates', Component: ResultLayout },
   { name: 'Button', layer: 'atoms', Component: Button },
   { name: 'IconButton', layer: 'atoms', Component: IconButton },
   { name: 'Icon', layer: 'atoms', Component: Icon },
