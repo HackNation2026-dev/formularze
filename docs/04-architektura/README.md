@@ -13,6 +13,10 @@ Autorytatywny opis działającej aplikacji, ze schematem potoku i ścieżkami mo
 miary: [MODULY.md](../08-implementacja/MODULY.md). Kontrakt REST i konfiguracja: `README.md` (sekcje „Konfiguracja”
 i „REST API”) oraz [SPEC.md](../08-implementacja/SPEC.md).
 
+Wyróżniki techniczne (rozpoznanie pliku przez Google Magika, hybrydowy odczyt PDF: warstwa tekstu + OCR Tesseract tylko
+na stronach-skanach, gramatyka JSON dla lokalnego LLM, deterministyczny kompilator COI, łańcuch zapasowy): `README.md`,
+sekcja „Jak to działa i co nas wyróżnia”.
+
 Interfejsy: `/review/` (serwowany przez API, w obrazie Docker) oraz osobna aplikacja GUI `apps/web`
 (Next.js, [ADR-002](../07-decyzje/ADR-002-gui-nextjs.md)), która woła to samo REST API i nie wchodzi do obrazu Docker backendu.
 
