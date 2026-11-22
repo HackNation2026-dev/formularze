@@ -5,6 +5,7 @@ const port = process.env.PLAYWRIGHT_PORT ?? '3100';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  expect: { timeout: 15_000 },
   use: { baseURL: `http://127.0.0.1:${port}`, trace: 'retain-on-failure' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

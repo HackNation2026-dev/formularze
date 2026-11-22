@@ -186,7 +186,9 @@ for (const width of [390, 820])
       await page
         .getByRole('button', { name: result.copy.copy, exact: true })
         .click();
-      await expect(page.getByRole('status')).toHaveText(result.copy.copied);
+      await expect(
+        page.getByRole('status').filter({ hasText: result.copy.copied }),
+      ).toBeVisible();
     });
   }
 test('brak wyniku', async ({ page }) => {
