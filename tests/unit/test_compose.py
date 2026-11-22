@@ -251,3 +251,76 @@ def test_compose_drops_conditions_that_would_close_a_cycle():
     assert not fields["sam"].states
     assert bool(fields["pierwsze"].states) != bool(fields["drugie"].states), "exactly one side of the pair is kept"
     assert not fields["zamknieta"].states
+
+
+@pytest.mark.parametrize(
+    "page_title,options",
+    [
+        ("Dane \u201ePrzedszkola\u201d i 'Żłobka'", ['Opcja "A"', "Opcja 'B'"]),
+        ('Wybór "trybu"', ["Tak/Nie", "Ścieżka C:\\dane\\plik"]),
+        ("Rodzic's choice", ["It's", 'Say "hi"']),
+    ],
+)
+def test_conditions_with_quotes_and_backslashes_parse_and_evaluate(page_title, options):
+    import jsonata
+
+    from formgen.schema.jsonata_lint import lint_query
+
+    form = compose(
+        FormSpec(
+            title="Test",
+            pages=[
+                PageSpec(
+                    title=page_title,
+                    sections=[
+                        SectionSpec(
+                            title="Wybór",
+                            fields=[FieldSpec(label="Tryb", kind=FieldType.RADIO, options=options)],
+                        ),
+                        SectionSpec(
+                            title="Szczegóły",
+                            visible_when=[Condition(field="Tryb", value=options[1])],
+                            fields=[FieldSpec(label="Opis")],
+                        ),
+                    ],
+                )
+            ],
+        )
+    )
+    errors = [v for v in check_rules(form) if v.severity == Severity.ERROR]
+    assert errors == [], "\n".join(map(str, errors))
+    query = form.tabs[1].questions[1].field.states[0].query
+    assert lint_query(query, form) == []
+    data = form.to_json_dict()
+    radio = data["tabs"][1]["questions"][0]["field"]["repeatingSectionGrid"][0]["field"]
+    for answer, expected in [(options[0], False), (options[1], True), (options[0], False)]:
+        radio["__userAnswer"] = [answer]
+        assert jsonata.Jsonata(query).evaluate(data) is expected
+
+
+def test_lint_reports_unknown_literal_with_escaped_quotes():
+    from formgen.schema.jsonata_lint import lint_query
+
+    form = compose(
+        FormSpec(
+            title="Test",
+            pages=[
+                PageSpec(
+                    title="Strona 'A'",
+                    sections=[
+                        SectionSpec(
+                            title="Wybór",
+                            fields=[FieldSpec(label="Tryb", kind=FieldType.RADIO, options=['Opcja "A"', "Inna"])],
+                        )
+                    ],
+                )
+            ],
+        )
+    )
+    tab = form.tabs[1].title
+    good = '("Opcja \\"A\\"" in tabs["Strona \'A\'" in title].questions[\'wybor\' in field.techName]'
+    good += ".field.repeatingSectionGrid['tryb' in field.techName].field.__userAnswer)"
+    assert tab == "Strona 'A'"
+    assert lint_query(good, form) == []
+    bad = good.replace('Opcja \\"A\\"', 'Opcja \\"B\\"')
+    assert [i.code for i in lint_query(bad, form)] == ["JSONATA_LITERAL"]
