@@ -100,12 +100,17 @@ export const handlers = [
     const result = analyzeFile(formData.get('file'));
     if ('code' in result) return failure(result.code)!;
     if ('scenario' in result) return failure(result.scenario)!;
+    const partial = result.metadata.extractor === 'HeuristicExtractor';
     return HttpResponse.json(result.form, {
       headers: {
         'X-Processing-Time-Ms': String(result.metadata.processing_time_ms),
         'X-Detected-Type': `${result.metadata.detected_type};score=1.000`,
         'X-Warnings': String(result.metadata.warnings),
         'X-Extractor': result.metadata.extractor,
+        ...(partial && {
+          'X-Partial-Result': 'true',
+          'X-Partial-Reasons': 'extractor-fallback:LlmUnavailable',
+        }),
       },
     });
   }),

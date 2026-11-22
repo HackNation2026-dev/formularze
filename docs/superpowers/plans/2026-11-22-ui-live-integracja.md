@@ -1,3 +1,9 @@
+---
+wersja: 0.1.0
+aktualizacja: 2026-11-22
+status: wykonany (Task 1–6; gałąź feat/web-live-integracja, przegląd końcowy przed PR)
+---
+
 # UI Live-Integracja — plan implementacji
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (native, wybrany przez właściciela). Steps use checkbox (`- [ ]`) syntax for tracking.

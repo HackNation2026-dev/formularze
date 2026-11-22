@@ -13,8 +13,9 @@ Ten plik jest zleceniem dla kolejnych agentów. Każde zadanie jest samodzielne:
 - Aplikacja Next.js 16 / React 19 / TypeScript strict w `apps/web/` (ADR-002), TanStack Query/Table/Form, next-intl (PL/EN), Tailwind v4 z tokenami z `design/tokens.css`, motyw jasny/ciemny.
 - Atomic design system w `apps/web/src/design-system/` (atomy, molekuły, organizmy, szablony) i katalog `/[locale]/design-system`.
 - Widoki: logowanie, upload z kolejką i szczegółami, wynik JSON, walidacja, podgląd e-usługi ze stanami dynamicznymi (silnik `src/lib/preview`), otwórz JSON z dysku, ustawienia, stany błędów (413, 415, 400, 401, 504, 503) i pustki.
+- Integracja live (2026-11-22, gałąź `feat/web-live-integracja`): tryb `live` domyślny (mock MSW tylko na wyraźną zmienną), proxy `/health`, `/ready`, `/api/:path*` → `API_INTERNAL_URL` w `next.config.ts` (ten sam origin, bez CORS), nagłówki `X-Partial-Result`/`X-Partial-Reasons` w metadanych i calloutach, dziennik aktywności API (`ApiActivityFeed`) w panelu uploadu, start w panelu uploadu, wsad `/batch` do 20 plików (Z1 pkt 8), profil e2e live (`PLAYWRIGHT_API_MODE=live`).
 - Mock API (MSW) zgodny z kontraktem `src/formgen/api/` (`/health`, `/ready`, `/formats`, `/analyze`, `/analyze-batch`, `/validate`, scenariusze błędów po nazwie pliku).
-- Testy: 324 jednostkowe (Vitest), 28 e2e (Playwright, Chromium), lint, typecheck, build. CI: `.github/workflows/web.yml` (bez e2e).
+- Testy: 347 jednostkowych (Vitest), 28 e2e (Playwright, Chromium), lint, typecheck, build. CI: `.github/workflows/web.yml` (bez e2e).
 - Tokeny: `design/tokens.css` (źródło), `design/tokens.json` (generowany `scripts/gui_tokens_from_css.py`), test kontrastu `tests/test_gui_tokens.py`.
 
 ## Zasady dla każdego agenta

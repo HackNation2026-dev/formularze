@@ -2,6 +2,7 @@
 
 ## Niewydane
 
+- Integracja GUI `apps/web/` z prawdziwym API: tryb `live` domyślny (mock tylko na wyraźną zmienną), proxy `/health`, `/ready`, `/api/:path*` do `API_INTERNAL_URL` w `next.config.ts` (bez CORS), powody degradacji z nagłówków `X-Partial-Result`/`X-Partial-Reasons`, dziennik aktywności API w panelu uploadu, wejście od razu w panel uploadu, nowa trasa `/batch` (do 20 plików jednym żądaniem `/analyze-batch`), profil e2e live (`PLAYWRIGHT_API_MODE=live`), 347 testów jednostkowych i 28 e2e.
 - Aplikacja GUI `apps/web/` (ADR-002): Next.js 16, React 19, TypeScript, TanStack Query/Table/Form, next-intl PL/EN, Tailwind v4 z tokenami, atomic design system z katalogiem `/design-system`, wszystkie podstawowe widoki (logowanie, upload z kolejką, wynik JSON, walidacja, podgląd e-usługi ze stanami JSONata, otwórz JSON, ustawienia, stany błędów), mock API (MSW), 324 testy jednostkowe i 28 e2e, workflow CI `web.yml`. Spec i plan w `docs/superpowers/`, lista zadań na kolejny etap w `docs/08-implementacja/GUI-DO-ZROBIENIA.md`.
 - Walidatory PL (`schema/validators.py`) i `sample_values` w `POST /api/v1/forms/validate` (#3).
 - Propozycja 3 nowych słowników: dyscypliny sportowe, rasy psów, podatki i opłaty lokalne (#4); wynik formularza 09 z pełną listą dyscyplin (#5).

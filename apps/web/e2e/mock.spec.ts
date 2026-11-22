@@ -3,9 +3,9 @@ import { expect, test } from '@playwright/test';
 test('mock w przeglądarce obsługuje kontrakt analizy i nagłówki', async ({
   page,
 }) => {
-  await page.goto('/pl');
+  await page.goto('/pl/upload');
   await expect(
-    page.getByRole('heading', { name: 'Strona startowa' }),
+    page.getByRole('heading', { name: 'Wczytaj formularze' }),
   ).toBeVisible();
   const result = await page.evaluate(async () => {
     const formats = await fetch('/api/v1/formats').then((response) =>
