@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from fastapi import UploadFile
 
 from formgen.api.errors import ApiError
-from formgen.api.settings import Settings
+from formgen.config import Settings
 from formgen.ingest.detect import KIND_BY_EXT, kind_for
 
 

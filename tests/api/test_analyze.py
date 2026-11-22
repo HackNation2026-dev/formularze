@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from formgen import pipeline
 from formgen.api.app import create_app
 from formgen.api.security import issue_token
-from formgen.api.settings import Settings
+from formgen.config import Settings
 from formgen.schema import FormDefinition, Severity, check_rules
 from tests.conftest import ROOT
 

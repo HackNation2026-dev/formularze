@@ -9,7 +9,7 @@ import jwt
 from fastapi import Depends, Request
 
 from formgen.api.errors import ApiError
-from formgen.api.settings import Settings, get_settings
+from formgen.config import Settings, get_settings
 
 
 def issue_token(s: Settings, subject: str = "demo", hours: int = 24, **claims: Any) -> str:
