@@ -167,8 +167,8 @@ def run_unit(u: Unit, client: CachingClient, settings: Settings) -> None:
         data = u.path.read_bytes()
         kind, _ = detect_kind(data)
         doc = load(data, kind, tika_url=None)
-        u.source = doc.text
-        u.lines = doc.to_prompt_text().splitlines()
+        u.source = doc.to_prompt_text()  # tables included: the model sees them, so labels may come from them
+        u.lines = u.source.splitlines()
         spec = extractor_mod.LlmExtractor(client).extract_document(doc, u.path.name, settings)
         u.form_def = compose(spec)
     except Exception as exc:
@@ -347,6 +347,9 @@ def main() -> None:
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
         auth_enabled=False,
         llm_fallback_heuristic=False,
+        llm_timeout_seconds=int(
+            os.environ.get("EVAL_LLM_TIMEOUT", "180")
+        ),  # GPU answers in <90 s; a stalled tailnet socket must not hold a worker 10 min
     )
     cache = None if args.no_cache else args.cache
     if cache:
