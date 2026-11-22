@@ -1,0 +1,7 @@
+{
+  "title": "Otwórz JSON",
+  "description": "Wczytaj konfigurację formularza z dysku. Plik pozostaje w tej karcie przeglądarki i nie jest wysyłany do API.",
+  "choose": "Wybierz plik JSON",
+  "invalid": "Nie udało się otworzyć pliku. Wybierz poprawną konfigurację formularza JSON.",
+  "loading": "Wczytywanie JSON…"
+}

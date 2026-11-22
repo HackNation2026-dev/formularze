@@ -1,0 +1,19 @@
+{
+  "empty": "Formularz nie ma kroków",
+  "steps": "Kroki formularza",
+  "back": "Wstecz",
+  "next": "Dalej",
+  "cancel": "Przerwij wypełnianie",
+  "cancelled": "Wypełnianie przerwane",
+  "restart": "Zacznij ponownie",
+  "dictionary": "Słownik: {name}",
+  "example": "Przykładowa wartość",
+  "choose": "Wybierz wartość",
+  "file": "Dodaj lub przeciągnij plik",
+  "fileHelp": "Podgląd — pliki nie są przesyłane.",
+  "add": "Dodaj kolejny",
+  "conditionError": "błędny warunek",
+  "evaluating": "Przeliczanie warunków",
+  "finished": "Koniec formularza",
+  "required": "Pole wymagane"
+}
