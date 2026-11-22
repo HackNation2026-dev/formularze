@@ -21,7 +21,7 @@ export function StepIndicator({ label, steps, current }: StepIndicatorProps) {
                   : 'text-muted',
             )}
           >
-            <span className="rounded-sm border border-current px-2 py-1">
+            <span className="rounded-md border border-current px-2 py-1">
               {index + 1}
             </span>
             {step}

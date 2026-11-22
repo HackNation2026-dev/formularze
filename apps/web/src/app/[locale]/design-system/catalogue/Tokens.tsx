@@ -37,7 +37,7 @@ export function Tokens({ themes, t }: { themes: TokenTheme[]; t: Copy }) {
                 ]),
               ) as CSSProperties
             }
-            className="rounded-md border border-border bg-surface p-4 text-text"
+            className="rounded-lg border border-border bg-surface p-4 text-text"
           >
             <h4 className="mb-4 font-semibold">{t[theme.name]}</h4>
             <ul className="grid gap-3">

@@ -23,6 +23,14 @@ import {
 
 afterEach(cleanup);
 describe('atomy', () => {
+  it('Badge ma kształt pigułki i szerokość dopasowaną do treści', () => {
+    render(<Badge>Gotowe</Badge>);
+    expect(screen.getByText('Gotowe')).toHaveClass(
+      'inline-flex',
+      'rounded-full',
+      'w-fit',
+    );
+  });
   it.each(['primary', 'secondary', 'ghost', 'danger'] as const)(
     'Button: %s, nazwa, kliknięcie i loading',
     (variant) => {

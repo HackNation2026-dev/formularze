@@ -19,7 +19,7 @@ export function Callout({
     <div
       {...props}
       className={cx(
-        'flex items-start gap-3 rounded-md border bg-surface p-4',
+        'flex items-start gap-3 rounded-lg border bg-surface p-4',
         tones[tone],
         className,
       )}
