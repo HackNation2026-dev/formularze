@@ -188,7 +188,13 @@ def to_spec(
     pages: dict[str, PageSpec] = {}
     dropped: list[str] = []
     extra_consents: list[tuple[str, bool]] = []
-    labels = {f.line: _label(f, lines) for s, lines in sections for f in s.fields if f.line in lines}
+    # a condition names its controlling field by line; a choice field wins when a line carries several fields
+    labels = {
+        f.line: _label(f, lines)
+        for s, lines in sections
+        for f in sorted(s.fields, key=lambda f: bool(f.option_lines))
+        if f.line in lines
+    }
     for s, lines in sections:
         if (
             NOISE_SECTION_RE.search(s.title)
@@ -198,14 +204,14 @@ def to_spec(
             dropped.append(f"noise-section:{s.title}")
             continue
         if CONSENT_SECTION_RE.search(s.title.strip()):
-            extra_consents.extend((labels[f.line], f.required) for f in s.fields if labels.get(f.line))
+            extra_consents.extend((x, f.required) for f in s.fields if f.line in lines and (x := _label(f, lines)))
             continue
         fields: list[FieldSpec] = []
         for f in s.fields:
             if f.line not in lines:
                 dropped.append(f"bad-line:{f.line}")
                 continue
-            label = labels[f.line]
+            label = _label(f, lines)  # per field: one line may carry several ("w miejscowości ____ przy ulicy ____")
             if not re.search(r"[^\W_]{2,}", clean(lines[f.line])) or not re.search(r"[^\W_]{2,}", label):
                 dropped.append(f"empty-line:{f.line}")  # no real word: '', '____', '...', '-'
                 continue

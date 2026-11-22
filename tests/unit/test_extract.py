@@ -540,3 +540,23 @@ def test_office_address_section_is_noise():
     assert NOISE_SECTION_RE.search("Dane urzędu")
     assert NOISE_SECTION_RE.search("Adresat wniosku")
     assert not NOISE_SECTION_RE.search("Lokalizacja budynku")
+
+
+def test_two_fields_on_one_line_keep_their_own_labels():
+    lines = {1: "w miejscowości ____ przy ulicy ____", 2: "nr ewidencyjny działki ____ w obrębie ____"}
+    secs = chunk(
+        lines,
+        LlmSection(
+            page_title="P",
+            title="Lokalizacja budynku",
+            fields=[
+                LlmField(line=1, label="Miejscowość"),
+                LlmField(line=1, label="Ulica"),
+                LlmField(line=2, label="Numer ewidencyjny działki"),
+                LlmField(line=2, label="Obręb"),
+            ],
+        ),
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
+    labels = [f.label for f in spec.pages[0].sections[0].fields]
+    assert labels == ["Miejscowość", "Ulica", "Numer ewidencyjny działki", "Obręb"]
