@@ -71,12 +71,12 @@ Lokalnie bez Dockera (dev):
 
 ## Interfejs przeglądu `/review/`
 
-Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON albo wysyła PDF do API. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
+Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON, wysyła PDF do API albo upuszcza kilka plików naraz i przełącza wyniki na liście wsadu. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
 
 ```bash
 npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
 make run                         # http://localhost:8000/review/
-npm run check:ui && npm run test:ui   # składnia, format, zasoby; 13 testów Playwright (Chrome)
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 14 testów Playwright (Chrome)
 ```
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).

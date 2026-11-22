@@ -36,6 +36,13 @@
           accept=".json,application/json"
       /></label>
       <button id="analyze" disabled>Prześlij PDF do API</button>
+      <label id="batch-drop" class="drop"
+        >Wiele plików do API (maks. 20): upuść tutaj lub wybierz<input
+          id="batch-files"
+          disabled
+          type="file"
+          multiple
+      /></label>
       <details>
         <summary>Uwierzytelnianie API</summary>
         <label
@@ -54,6 +61,10 @@
       przeglądu.
     </p>
     <main class="workspace">
+      <nav id="batch" hidden aria-labelledby="batch-title">
+        <h2 id="batch-title">Pliki wsadu</h2>
+        <ol id="batch-list"></ol>
+      </nav>
       <section class="source" aria-label="Dokument źródłowy">
         <h2>PDF źródłowy</h2>
         <p id="pdf-name">Nie wczytano PDF.</p>

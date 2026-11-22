@@ -1,6 +1,6 @@
 ---
-wersja: 0.4.0
-aktualizacja: 2026-11-21
+wersja: 0.5.0
+aktualizacja: 2026-11-22
 status: implementacja
 ---
 
@@ -33,6 +33,8 @@ Do podglądu wystarcza serwer API, model może być wyłączony. Przykładowe pl
 
 Rzeczywiste AI: uruchom `make llm` albo wskaż serwer przez `LLM_BASE_URL`, z `EXTRACTOR=llm`. Przycisk „Prześlij PDF do API” wysyła jeden plik jako multipart `file` do `/api/v1/forms/analyze`. Etykieta pochodzenia wyniku opiera się na nagłówku `X-Extractor`: `LlmExtractor` = AI, `HeuristicExtractor` = tryb zastępczy, `StubExtractor` = tryb testowy, brak lub inny nagłówek = nieznane pochodzenie. Niepowodzenie zachowuje poprzednią konfigurację.
 
+Wsad: pole „Wiele plików do API” przyjmuje do 20 plików naraz (upuszczenie albo wybór z dysku) w dowolnym formacie API. UI wysyła je jednym żądaniem multipart `files` do `/api/v1/forms/analyze-batch`. Lista „Pliki wsadu” po lewej pokazuje każdy plik ze statusem: „Gotowy” z ekstraktorem albo kod i komunikat błędu tego pliku. Kliknięcie gotowego pliku wczytuje jego konfigurację, a dla PDF także podgląd źródła. Błąd jednego pliku nie zatrzymuje pozostałych.
+
 ## 2. Scenariusz demonstracji
 
 1. Wczytaj PDF i JSON formularza 05. PDF jest po lewej, 73 elementy czterech stron po prawej. „Przegląd wszystkich pól” nie ukrywa pól zależnych od odpowiedzi.
@@ -42,12 +44,13 @@ Rzeczywiste AI: uruchom `make llm` albo wskaż serwer przez `LLM_BASE_URL`, z `E
 5. Wczytaj inną konfigurację: lista uwag jest pusta, skrót się zmienia. Pobierz raport przed zmianą wyniku lub odświeżeniem karty, bo UI nie archiwizuje danych.
 6. Wczytaj `tests/ui/fixtures/cross-page.json` (przykład kontrolny, nie wynik AI). Na stronie Pierwsza wybieraj Tak, Nie, Tak. Na stronie Druga pole zależne pokazuje się, znika i znowu się pokazuje; drugie pole blokuje się i odblokowuje tak samo.
 7. Wyślij PDF 05 do API. Obserwuj przetwarzanie, pochodzenie, czas i wynik lub błąd. Uruchom „Waliduj strukturę przez API”. Zielony wynik techniczny nie potwierdza treści.
+8. Upuść na pole „Wiele plików do API” kilka plików z `data/input/04_formularze_do_oceny/` w różnych formatach oraz plik `.txt`. Lista pokazuje gotowe pliki i błąd 415 dla `.txt`. Przełączaj formularze kliknięciem na liście.
 
 ## 3. Sprawdzenia
 
 ```sh
 npm run check:ui   # zasoby zgodne z package-lock, składnia JS, Prettier
-npm run test:ui    # 13 testów Playwright
+npm run test:ui    # 14 testów Playwright
 make test
 make lint
 ```
@@ -56,9 +59,10 @@ Testy UI używają lokalnego Google Chrome (Playwright `channel: chrome`), osobn
 
 ## 4. Ograniczenia
 
-- Wysyłka do API i podgląd źródła obsługują tylko PDF. Pozostałe formaty (DOC, DOCX, ODS, XLSX, JPG, PNG) trzeba wysłać przez API, a wynik wczytać jako JSON.
+- Podgląd źródła obsługuje tylko PDF. Przycisk „Prześlij PDF do API” wysyła tylko PDF. Pozostałe formaty (DOC, DOCX, ODS, XLSX, JPG, PNG) przechodzą przez wsad, bez podglądu źródła.
+- Wybór innego pliku z listy wsadu działa jak wczytanie nowej konfiguracji: uwagi poprzedniego wyniku znikają. Pobierz raport przed przełączeniem.
 - Renderowane są wszystkie typy elementów z referencji 05. Nieobsługiwany typ (np. sekcja powtarzalna) jest oznaczony jako problem razem z dziećmi.
-- Nie ma pełnego edytora konfiguracji ani przetwarzania zbiorczego w UI.
+- Nie ma pełnego edytora konfiguracji.
 - Pola rejestrowe są puste i opisane. Słowniki przyjmują wartości wpisane ręcznie jako dane przykładowe. Załączniki symulacji nie są nigdzie wysyłane.
 - Podgląd PDF rysuje płótno i tekst bez wykonywania skryptów PDF i aktywnych adnotacji. Teksty HTML z konfiguracji są wyświetlane jako tekst. Warunki liczy izolowany worker z limitem 2 sekund.
 - Symulacja nie zastępuje walidacji w Generatorze COI: wymagalność, rejestry, podpis i wysyłka nie są sprawdzane.

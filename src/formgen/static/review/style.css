@@ -142,6 +142,46 @@ small,
   padding: 20px 24px;
   align-items: start;
 }
+.workspace:has(> #batch:not([hidden])) {
+  grid-template-columns: minmax(180px, 0.35fr) minmax(320px, 0.9fr) minmax(
+      420px,
+      1.1fr
+    );
+}
+.drop {
+  border: 2px dashed #8a9ba8;
+  border-radius: 8px;
+  padding: 8px 12px 0;
+}
+#batch h2 {
+  margin-top: 0;
+  font-size: 18px;
+}
+#batch ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#batch li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e7eb;
+  overflow-wrap: anywhere;
+}
+#batch button {
+  width: 100%;
+  text-align: left;
+}
+#batch button[aria-current="true"] {
+  border-color: #125d60;
+  box-shadow: inset 4px 0 #125d60;
+}
+#batch small {
+  display: block;
+}
+.batch-error {
+  color: #8a3700;
+}
+#batch,
 .source,
 .configuration,
 .annotations {
@@ -278,7 +318,8 @@ footer {
   display: none !important;
 }
 @media (max-width: 850px) {
-  .workspace {
+  .workspace,
+  .workspace:has(> #batch:not([hidden])) {
     grid-template-columns: 1fr;
     padding: 12px;
   }

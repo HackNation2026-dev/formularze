@@ -15,7 +15,7 @@ Start pracy: `git checkout develop && git pull && python3 scripts/sync_materials
 Dwie sesje agenta nigdy w jednym katalogu: `git worktree add ../formularze-<nazwa> develop`.
 
 ## Strumień A. Frontend (1–2 osoby, punkty IV + intuicyjność 20%)
-Stan: interfejs `/review/` jest w repo ([UI-PRZEGLAD](UI-PRZEGLAD.md)). Pokrywa kroki 1–4 poza listą wielu plików i formatami innymi niż PDF. Dalsza praca rozbudowuje go zamiast zaczynać od nowa.
+Stan: interfejs `/review/` jest w repo ([UI-PRZEGLAD](UI-PRZEGLAD.md)). Pokrywa kroki 1–4, w tym wsad wielu plików w dowolnym formacie API (podgląd źródła tylko dla PDF). Dalsza praca rozbudowuje go zamiast zaczynać od nowa.
 Spec: `docs/08-implementacja/FRONTEND-BRIEF.md`. Biblioteka JSONata już w `src/formgen/static/vendor/`.
 Kolejność:
 1. Upload + lista plików + status + pobranie JSON (pół dnia).
