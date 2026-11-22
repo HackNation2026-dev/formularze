@@ -158,12 +158,12 @@ Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtrac
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `8a34858` | x86, bez GPU | 15/15; analiza przez lokalny model 98 s |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `d3f0b65` (22.11 08:40) | x86, bez GPU | 15/15; analiza formularza 05 przez lokalny model 85 s (przed #48/#49/#52: 98–232 s) |
 | Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
 | SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
 | Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
 | Qwen3.5-4B Q4, generacja | M4 Metal / GTX 1660 Ti / CPU x86 | 12 / 59 / ok. 11 tok/s |
-| 9 formularzy do oddania (`data/output/`) | GPU przez tunel | 0 błędów reguł; 15–323 s na formularz |
+| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, bez fallbacku heurystycznego) | GPU (Tailscale) | 0 błędów reguł w 9/9; 29–300 s na formularz; golden F1 01 0,864 / 05 0,843 |
 | Tryb bez modelu (`EXTRACTOR=heuristic`) | – | JSON zawsze poprawny; przedmiot wniosku słabszy |
 
 Szczegóły: `docs/08-implementacja/research/` (badania i pomiary), `docs/08-implementacja/DEMO-SETUP.md` (ustawienie na obronę).
