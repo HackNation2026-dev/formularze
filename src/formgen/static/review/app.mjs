@@ -15,8 +15,9 @@ let simulation = false,
   conditionWorker = null,
   conditionTimer = null,
   conditionResults = {};
-let pdfFile = null;
-connectPdf({
+let pdfFile = null,
+  batch = [];
+const pdf = connectPdf({
   onFile: (file) => {
     pdfFile = file;
   },
@@ -226,6 +227,9 @@ $("export-report").addEventListener("click", () =>
 function setBusy(busy) {
   $("json-file").disabled = busy;
   $("pdf-file").disabled = busy;
+  $("batch-files").disabled = busy;
+  for (const button of $("batch-list").querySelectorAll("button"))
+    button.disabled = busy;
   $("analyze").disabled = busy || !pdfFile;
   $("validate").disabled = busy || !config;
 }
@@ -243,27 +247,15 @@ $("analyze").addEventListener("click", async () => {
       body,
       $("token").value.trim(),
     );
-    const extractor = headers.get("X-Extractor") ?? "";
-    const label =
-      extractor === "LlmExtractor"
-        ? "Wynik AI"
-        : extractor === "HeuristicExtractor"
-          ? "Tryb zastępczy (heurystyka, bez AI)"
-          : extractor === "StubExtractor"
-            ? "Tryb testowy (stub, bez AI)"
-            : "Nieznane pochodzenie — API nie potwierdza AI";
-    const processingTimeMs = headers.get("X-Processing-Time-Ms");
-    const warnings = headers.get("X-Warnings");
-    await loadConfig(value, {
-      kind: "api",
-      extractor,
-      processingTimeMs,
-      warnings,
-      label: `${label} · ${extractor || "brak X-Extractor"} · czas: ${processingTimeMs ?? "?"} ms · ostrzeżenia: ${warnings ?? "?"}`,
-    });
+    const origin = apiOrigin(
+      headers.get("X-Extractor") ?? "",
+      headers.get("X-Processing-Time-Ms"),
+      headers.get("X-Warnings"),
+    );
+    await loadConfig(value, origin);
     setMode(false);
     status(
-      `Zakończono: ${label}. Kompletność treści i warunki wymagają osobnego przeglądu.`,
+      `Zakończono: ${origin.summary}. Kompletność treści i warunki wymagają osobnego przeglądu.`,
     );
   } catch (e) {
     status(
@@ -272,6 +264,110 @@ $("analyze").addEventListener("click", async () => {
   } finally {
     setBusy(false);
   }
+});
+function apiOrigin(extractor, processingTimeMs, warnings, sourceName) {
+  const summary =
+    extractor === "LlmExtractor"
+      ? "Wynik AI"
+      : extractor === "HeuristicExtractor"
+        ? "Tryb zastępczy (heurystyka, bez AI)"
+        : extractor === "StubExtractor"
+          ? "Tryb testowy (stub, bez AI)"
+          : "Nieznane pochodzenie — API nie potwierdza AI";
+  return {
+    kind: "api",
+    extractor,
+    processingTimeMs,
+    warnings,
+    sourceName,
+    summary,
+    label: `${sourceName ? sourceName + " · " : ""}${summary} · ${extractor || "brak X-Extractor"} · czas: ${processingTimeMs ?? "?"} ms · ostrzeżenia: ${warnings ?? "?"}`,
+  };
+}
+async function analyzeBatch(files) {
+  if (!files.length) return;
+  setBusy(true);
+  status(
+    `Przetwarzanie ${files.length} plików przez API… Poczekaj na wynik. Dotychczasowa konfiguracja pozostaje widoczna.`,
+  );
+  try {
+    const body = new FormData();
+    for (const file of files) body.append("files", file, file.name);
+    const { value } = await api("analyze-batch", body, $("token").value.trim());
+    if (value.results?.length !== files.length)
+      throw new Error("Nieprawidłowa odpowiedź API wsadowego.");
+    batch = value.results.map((result, i) => ({ file: files[i], result }));
+    renderBatch();
+    status(
+      `Wsad: gotowe ${value.ok}, z błędem ${value.failed}. Wybierz plik z listy.`,
+    );
+  } catch (e) {
+    status(
+      `Błąd wsadu: ${e.message}. Nie zastąpiono dotychczasowej konfiguracji.`,
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+function renderBatch() {
+  $("batch").hidden = false;
+  $("batch-list").replaceChildren(
+    ...batch.map(({ result }, i) => {
+      const item = element("li");
+      if (result.status === 200) {
+        const button = element("button", result.filename);
+        button.dataset.entry = i;
+        button.addEventListener("click", () => selectBatch(i));
+        item.append(
+          button,
+          element("small", `Gotowy · ${result.extractor}`, "meta"),
+        );
+      } else
+        item.append(
+          element("span", result.filename),
+          element(
+            "small",
+            `Błąd ${result.status}: ${result.error?.code ?? "API_ERROR"} — ${result.error?.message ?? ""}`,
+            "batch-error",
+          ),
+        );
+      return item;
+    }),
+  );
+}
+async function selectBatch(i) {
+  const { file, result } = batch[i];
+  try {
+    await loadConfig(
+      result.form,
+      apiOrigin(
+        result.extractor,
+        result.processing_time_ms,
+        result.warnings,
+        result.filename,
+      ),
+    );
+    setMode(false);
+    for (const button of $("batch-list").querySelectorAll("button"))
+      if (button.dataset.entry === `${i}`)
+        button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+    await pdf.clear(`Podgląd źródła tylko dla PDF. Plik: ${file.name}.`);
+    if (/\.pdf$/i.test(file.name)) await pdf.open(file);
+    else setBusy(false);
+  } catch (e) {
+    status(`Błąd konfiguracji z pliku ${result.filename}: ${e.message}`);
+  }
+}
+$("batch-files").addEventListener("change", (event) => {
+  const files = [...event.target.files];
+  event.target.value = "";
+  analyzeBatch(files);
+});
+$("batch-drop").addEventListener("dragover", (event) => event.preventDefault());
+$("batch-drop").addEventListener("drop", (event) => {
+  event.preventDefault();
+  if (!$("batch-files").disabled) analyzeBatch([...event.dataTransfer.files]);
 });
 $("validate").addEventListener("click", async () => {
   if (!config) return;

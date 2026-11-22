@@ -7,6 +7,26 @@ const pdf = path.resolve(
   "data/input/01_przyklady_formularze/05_nadplata_podatku/Wniosek o stwierdzenie nadpłaty podatku.PDF",
 );
 
+function bearerToken() {
+  const { createHmac } = require("node:crypto");
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      sub: "ui-test",
+      exp: Math.floor(Date.now() / 1000) + 600,
+    }),
+  ).toString("base64url");
+  const signature = createHmac(
+    "sha256",
+    "ui-test-secret-with-at-least-32-characters",
+  )
+    .update(`${header}.${payload}`)
+    .digest("base64url");
+  return `${header}.${payload}.${signature}`;
+}
+
 async function openReview(page) {
   await page.goto("/review/");
   await expect(page.getByLabel("Konfiguracja JSON")).toBeEnabled();
@@ -160,26 +180,8 @@ test("real API reports authorization errors, processing, heuristic fallback and 
   await expect(page.locator("#status")).toContainText("401");
   await expect(page.locator("#status")).toContainText("UNAUTHORIZED");
   await expect(page.locator("#provenance")).toContainText("Plik lokalny");
-  const { createHmac } = require("node:crypto");
-  const header = Buffer.from(
-    JSON.stringify({ alg: "HS256", typ: "JWT" }),
-  ).toString("base64url");
-  const payload = Buffer.from(
-    JSON.stringify({
-      sub: "ui-test",
-      exp: Math.floor(Date.now() / 1000) + 600,
-    }),
-  ).toString("base64url");
-  const signature = createHmac(
-    "sha256",
-    "ui-test-secret-with-at-least-32-characters",
-  )
-    .update(`${header}.${payload}`)
-    .digest("base64url");
   await page.getByText("Uwierzytelnianie API", { exact: true }).click();
-  await page
-    .getByLabel("Token Bearer")
-    .fill(`${header}.${payload}.${signature}`);
+  await page.getByLabel("Token Bearer").fill(bearerToken());
   await page.getByRole("button", { name: "Prześlij PDF do API" }).click();
   await expect(page.locator("#status")).toContainText("Przetwarzanie");
   await expect(page.locator("#provenance")).toContainText("Tryb zastępczy", {
@@ -405,4 +407,72 @@ test("malformed nested content cannot erase an existing review or leave a partia
     "Wniosek o stwierdzenie nadpłaty podatku",
   );
   expect(report.annotations[0].text).toBe("Zachowaj tę uwagę.");
+});
+
+test("dropping several files sends one batch, lists each file with its status and switches between the processed forms", async ({
+  page,
+}) => {
+  await openReview(page);
+  await page.getByText("Uwierzytelnianie API", { exact: true }).click();
+  await page.getByLabel("Token Bearer").fill(bearerToken());
+  const numberPdf = path.resolve(
+    "data/input/01_przyklady_formularze/01_numer_porzadkowy_nieruchomosci/Wniosek o ustalenie numeru porządkowego nieruchomości.pdf",
+  );
+  const files = [
+    {
+      name: path.basename(numberPdf),
+      data: require("node:fs").readFileSync(numberPdf),
+    },
+    { name: "notatka.txt", data: Buffer.from("to nie formularz") },
+    { name: path.basename(pdf), data: require("node:fs").readFileSync(pdf) },
+  ].map(({ name, data }) => ({ name, base64: data.toString("base64") }));
+  const dataTransfer = await page.evaluateHandle((files) => {
+    const transfer = new DataTransfer();
+    for (const { name, base64 } of files)
+      transfer.items.add(
+        new File([Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))], name),
+      );
+    return transfer;
+  }, files);
+  await page.locator("#batch-drop").dispatchEvent("drop", { dataTransfer });
+  const list = page.getByRole("navigation", { name: "Pliki wsadu" });
+  const entries = list.getByRole("listitem");
+  await expect(entries).toHaveCount(3, { timeout: 30000 });
+  await expect(page.locator("#status")).toContainText("gotowe 2, z błędem 1");
+  await expect(entries.nth(0)).toContainText(files[0].name);
+  await expect(entries.nth(0)).toContainText("Gotowy");
+  await expect(entries.nth(1)).toContainText("notatka.txt");
+  await expect(entries.nth(1)).toContainText(
+    "Błąd 415: UNSUPPORTED_MEDIA_TYPE",
+  );
+  await expect(entries.nth(1).getByRole("button")).toHaveCount(0);
+  await expect(entries.nth(2)).toContainText(files[2].name);
+  await expect(entries.nth(2)).toContainText("Gotowy");
+
+  await list.getByRole("button", { name: files[0].name }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Wniosek o ustalenie numeru porządkowego",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator("#provenance")).toContainText(files[0].name);
+  await expect(page.locator("#provenance")).toContainText("Tryb zastępczy");
+  await expect(page.locator("#pdf-name")).toHaveText(files[0].name);
+
+  const second = list.getByRole("button", { name: files[2].name });
+  await second.click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Wniosek o stwierdzenie nadpłaty podatku",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(second).toHaveAttribute("aria-current", "true");
+  await expect(
+    list.getByRole("button", { name: files[0].name }),
+  ).not.toHaveAttribute("aria-current", "true");
+  await expect(page.locator("#pdf-name")).toHaveText(files[2].name);
+  await expect(page.getByText("PDF: strona 1 z 1")).toBeVisible();
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual({});
 });

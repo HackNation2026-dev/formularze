@@ -15,7 +15,7 @@ Start pracy: `git checkout develop && git pull && python3 scripts/sync_materials
 Dwie sesje agenta nigdy w jednym katalogu: `git worktree add ../formularze-<nazwa> develop`.
 
 ## Strumień A. Frontend (1–2 osoby, punkty IV + intuicyjność 20%)
-Stan: interfejs `/review/` jest w repo ([UI-PRZEGLAD](UI-PRZEGLAD.md)). Pokrywa kroki 1–4 poza listą wielu plików i formatami innymi niż PDF. Dalsza praca rozbudowuje go zamiast zaczynać od nowa.
+Stan: interfejs `/review/` jest w repo ([UI-PRZEGLAD](UI-PRZEGLAD.md)). Pokrywa kroki 1–4, w tym wsad wielu plików w dowolnym formacie API (podgląd źródła tylko dla PDF). Dalsza praca rozbudowuje go zamiast zaczynać od nowa.
 Spec: `docs/08-implementacja/FRONTEND-BRIEF.md`. Biblioteka JSONata już w `src/formgen/static/vendor/`.
 Kolejność:
 1. Upload + lista plików + status + pobranie JSON (pół dnia).
@@ -26,6 +26,11 @@ Dev bez modelu: `AUTH_ENABLED=false EXTRACTOR=heuristic make run`.
 Definicja ukończenia: jury wrzuca PDF, widzi formularz, klika „Innej osoby” i pojawia się sekcja pełnomocnictwa.
 
 ## Strumień B. Jakość ekstrakcji (1 osoba, kompletność + oryginalność)
+Pętla ewaluacji (zasady zespołu z 22.11):
+- zmiana w post-processingu (`to_spec`, `assemble.py`, walidacja): tylko `make eval-warm` (cache odpowiedzi modelu, ~10 s, zero wywołań GPU; chybienie w cache = ERROR);
+- zmiana promptu: `scripts/eval_fast.sh --cold` raz, potem znów ciepło;
+- smoke = formularze 05, 09, 04, 01; 08 nigdy w smoke; `make eval-full` (9 formularzy, zimno) tylko przed commitem;
+- wspólny cache: `~/.cache/formgen-eval` (zmienna `EVAL_CACHE`); SCORE bazowy na smoke (develop, 22.11): 0,7363.
 1. Otwórz 7 plików `data/output/*.json` w wizualizacji (lub `scripts/run_e2e.py` z `--out`). Spisz powtarzalne błędy modelu: duplikaty, TEXT zamiast RADIO, zły podział na strony.
 2. Poprawki w `src/formgen/extract/prompts.py` i `extractor.py`. Po każdej: `make e2e` (golden 05) i `make batch` na Legionie (`LLM_BASE_URL=http://100.111.226.49:18081`).
 3. Miara: `compare()` w `src/formgen/eval/metric.py`; nie schodzić poniżej composite 0,90 na goldenach.

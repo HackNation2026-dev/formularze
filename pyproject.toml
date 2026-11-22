@@ -5,6 +5,7 @@ description = "HackNation 2026 / COI: AI service converting paper form files int
 requires-python = ">=3.14"
 dependencies = [
     "fastapi",
+    "anyio",
     "uvicorn[standard]",
     "python-multipart",
     "pydantic",

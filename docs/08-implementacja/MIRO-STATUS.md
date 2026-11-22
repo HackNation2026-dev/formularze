@@ -4,6 +4,8 @@ aktualizacja: 2026-11-21
 status: implementacja
 ---
 
+> Dokument historyczny: stan na 21.11, 15:40. Aktualny stan: `architektura.md` (sekcja „Zmiany po 21.11”) i `README.md`.
+
 # Miro „HackNation 2026: architektura” vs stan repo (2026-11-21 15:40)
 
 Źródło: `HackNation 2026_ architektura-miro.pdf` (eksport boardu). Dotyczy części **COI**. Część UZP (Odwołania2JSON) to inne zadanie, pomijam.

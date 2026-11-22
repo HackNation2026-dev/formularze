@@ -1,6 +1,6 @@
 # Formularze — COI
 
-Prywatne repozytorium przygotowawcze dla HackNation 2026. Organizacja docelowa: `HackNation2026-dev`. Wersja: **0.4.0**.
+Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja docelowa: `HackNation2026-dev`. Wersja: **0.4.0**.
 
 ## Stan
 
@@ -71,12 +71,12 @@ Lokalnie bez Dockera (dev):
 
 ## Interfejs przeglądu `/review/`
 
-Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON albo wysyła PDF do API. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
+Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON, wysyła PDF do API albo upuszcza kilka plików naraz i przełącza wyniki na liście wsadu. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
 
 ```bash
 npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
 make run                         # http://localhost:8000/review/
-npm run check:ui && npm run test:ui   # składnia, format, zasoby; 13 testów Playwright (Chrome)
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 14 testów Playwright (Chrome)
 ```
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
@@ -92,13 +92,17 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
 | `ALLOWED_EXTENSIONS` | pdf,doc,docx,ods,xlsx,jpg,jpeg,png | whitelist rozszerzeń (case-insensitive) |
 | `AUTH_ENABLED` | true | wymagaj JWT Bearer |
 | `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_LEEWAY_SECONDS` | –, HS256, –, –, 30 | weryfikacja tokenu |
-| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 600 | serwer zgodny z OpenAI z otwartym modelem: lokalny llama.cpp albo nasza chmura (`LLM_API_KEY`); `LLM_FALLBACK_BASE_URL` = lokalny zapas |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_SECONDS` | http://llm:8080, qwen3.5-4b, 600 | serwer zgodny z OpenAI z otwartym modelem: lokalny llama.cpp albo ten sam model w chmurze |
+| `LLM_API_KEY` | – | klucz do endpointu w chmurze (Bearer), tylko w runtime |
+| `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_MODEL` | – | zapas, zwykle lokalny `http://llm:8080`; używany po pierwszej awarii głównego endpointu |
+| `LLM_CACHE_DIR` | – | tylko ewaluacja: cache sparsowanych odpowiedzi modelu na dysku; nie ustawiać w produkcji |
 | `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | tesseract / rapidocr / unlimited (sidecar GPU) |
 | `DOC_CONVERTER_URL` | – | Apache Tika dla `.doc` |
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
-| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | |
+| `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | limit czasu na jeden plik (504 po przekroczeniu) |
+| `MAX_BATCH_FILES` | 20 | maksymalna liczba plików w `analyze-batch` (413 powyżej) |
 
 ## REST API
 
@@ -107,9 +111,10 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 | Metoda i ścieżka | Auth | Opis |
 |---|---|---|
 | `POST /api/v1/forms/analyze` | Bearer | `multipart/form-data`, pole `file` (jeden plik). 200: JSON `FormDefinition`. Nagłówki: `X-Processing-Time-Ms`, `X-Detected-Type`, `X-Warnings` |
+| `POST /api/v1/forms/analyze-batch` | Bearer | `multipart/form-data`, pole `files` powtórzone (do `MAX_BATCH_FILES`). Pliki po kolei, każdy z własnym `REQUEST_TIMEOUT_SECONDS`. 200: `{"results": [{"filename", "status", "form" \| "error", "processing_time_ms", "extractor", ...}], "ok", "failed"}`; błąd jednego pliku nie przerywa paczki |
 | `POST /api/v1/forms/validate` | Bearer | body = `FormDefinition` z opcjonalnym kluczem `sample_values` (techName -> wartość); zwraca `valid`, `errors`, `warnings` wg reguł technicznych COI oraz `sample_errors` (wartości niespełniające walidatorów pola) i `sample_unknown` (techName spoza formularza) |
 | `GET /api/v1/formats` | – | obsługiwane rozszerzenia i limit rozmiaru |
-| `GET /health`, `GET /ready` | – | liveness / readiness |
+| `GET /health`, `GET /ready` | – | liveness / readiness (`/ready` pyta LLM: `degraded` gdy działa tylko fallback heurystyczny, 503 gdy fallback wyłączony) |
 | `GET /review/` | – (wywołania API z UI używają tokena Bearer) | interfejs przeglądu i symulacji |
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),
@@ -120,19 +125,39 @@ detektorem Google magika, musi zgadzać się z rozszerzeniem), `422 PROCESSING_F
 Plik jest przetwarzany wyłącznie w pamięci i w katalogu tymczasowym żądania; nic nie jest zapisywane na stałe.
 Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtractor` lub `HeuristicExtractor` po awarii modelu).
 
-## Pomiary (2026-11-21)
+## Pomiary (stan 22.11)
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Golden 05 (nadpłata podatku) vs JSON COI | M4, Qwen3.5-4B | composite 0.96, F1 0.92, stany SHOW 0.97, 65 s |
-| Golden 01 (numer porządkowy) | M4 | composite 0.93, F1 0.87, 88 s |
-| Qwen3.5-4B Q4 generacja | M4 Metal / GTX 1660 Ti | 12 tok/s / 59 tok/s |
-| Golden 05 przez GPU (GTX 1660 Ti, Tailscale) | Legion | composite 0.96, 16 s |
-| Formularz 6-stronicowy (08) | M4 / 1660 Ti | 634 s / 175 s |
-| Formularz 16-stronicowy (09, 3 wnioski w 1) | 1660 Ti | 109 s, 7 stron, 90 pól, JSON poprawny |
-| Tryb bez LLM (`heuristic`) na goldenach | – | composite 0.92–0.94 (szablon), przedmiot wniosku słabszy |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`) | x86, bez GPU | 15/15; analiza przez lokalny model 213 s |
+| Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
+| SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
+| Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
+| Qwen3.5-4B Q4, generacja | M4 Metal / GTX 1660 Ti / CPU x86 | 12 / 59 / ok. 11 tok/s |
+| 9 formularzy do oddania (`data/output/`) | GPU przez tunel | 0 błędów reguł; 15–323 s na formularz |
+| Tryb bez modelu (`EXTRACTOR=heuristic`) | – | JSON zawsze poprawny; przedmiot wniosku słabszy |
 
-Skrypty: `make e2e` (jeden formularz vs golden), `make batch` (7 formularzy -> `data/output/`), `LLM_BASE_URL=http://host:port` kieruje na inny serwer llama.cpp (np. GPU przez Tailscale).
+Szczegóły: `docs/08-implementacja/research/` (badania i pomiary), `docs/08-implementacja/DEMO-SETUP.md` (ustawienie na obronę).
+
+## Ewaluacja jakości
+
+Harness `scripts/eval_suite.py` liczy dla każdego z 9 formularzy i jego formatów: zgodność z JSON-em wzorcowym (01, 05),
+zgodność pól między formatami, pokrycie linii z polami do wpisania i szum. SCORE to średnia z formularzy.
+
+```bash
+make eval-warm                  # smoke 01/04/05/09 z cache odpowiedzi, ok. 10 s, zero wywołań modelu
+scripts/eval_fast.sh --cold     # po zmianie promptu: uzupełnia cache (model z LLM_BASE_URL)
+make eval-full                  # wszystkie 9 formularzy na zimno, raz przed commitem
+```
+
+Zasady pętli są w `docs/08-implementacja/PLAN-ZESPOL.md`. Formularz 08 nie wchodzi do smoke.
+
+## Model w chmurze
+
+Mentor COI (21.11): maszyna jury nie ma GPU; model w chmurze wołany po API jest dozwolony, jeśli jest otwarty i możliwy
+do postawienia na własnej infrastrukturze. Ten sam Qwen3.5-4B (Apache-2.0) działa lokalnie w kontenerze `llm` i na naszym
+serwerze z GPU (`scripts/legion/serve_gpu.sh`: llama.cpp, klucz API, tunel HTTPS). Aplikacja przełącza się przez
+`LLM_BASE_URL`, a przy braku sieci wraca do lokalnego modelu, potem do trybu bez modelu.
 
 Świadoma decyzja: plik `.doc`, który w środku jest DOCX (tak jest w materiałach organizatora), jest akceptowany
 i przetwarzany według zawartości.

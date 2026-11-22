@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     allowed_extensions: str = "pdf,doc,docx,ods,xlsx,jpg,jpeg,png"
     max_filename_length: int = 250
     forbidden_filename_chars: str = ";:<>/\\|'*%$"
-    request_timeout_seconds: int = 1800
+    request_timeout_seconds: int = 1800  # per file, also inside a batch
+    max_batch_files: int = Field(default=20, ge=1)
 
     # auth
     auth_enabled: bool = True
@@ -37,6 +38,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""  # runtime secret, never baked into the image
     llm_fallback_base_url: str | None = None
     llm_fallback_model: str | None = None
+    llm_cache_dir: str = ""  # evaluation only: cache model answers on disk (never set in production)
     # one chunk on a CPU-only box can take minutes; after this the heuristic extractor takes over
     llm_timeout_seconds: int = 600
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited

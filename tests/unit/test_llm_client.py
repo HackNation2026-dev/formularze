@@ -79,3 +79,35 @@ def test_chain_falls_back_to_local_and_skips_dead_endpoint():
     chain.complete("s", "u", LlmGlobal)
     assert calls == ["cloud", "local", "local"]
     assert all(c["endpoint"] == "http://fake" for c in chain.calls)
+
+
+def test_disk_cache_skips_the_model_on_identical_prompt(tmp_path):
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(200, json=OK)
+
+    c = _client(handler, cache_dir=tmp_path)
+    assert c.complete("sys", "user", LlmGlobal).title == "Wniosek testowy"
+    assert c.complete("sys", "user", LlmGlobal).title == "Wniosek testowy"
+    c.complete("sys", "other user", LlmGlobal)
+    assert len(calls) == 2 and c.cache_hits == 1
+    assert len(list(tmp_path.glob("*.json"))) == 2
+
+
+def test_disk_cache_not_written_for_invalid_answer(tmp_path):
+    bad = {"choices": [{"message": {"content": "{not json"}, "finish_reason": "length"}]}
+    c = _client(lambda req: httpx.Response(200, json=bad), cache_dir=tmp_path)
+    with pytest.raises(ValueError):
+        c.complete("sys", "user", LlmGlobal)
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_make_client_passes_cache_dir_from_settings(tmp_path):
+    from formgen.api.settings import Settings
+    from formgen.extract.llm_client import make_client
+
+    c = make_client(Settings(_env_file=None, llm_cache_dir=str(tmp_path), llm_fallback_base_url="http://local"))
+    assert all(cl.cache_dir == tmp_path for cl in c.clients)
+    assert make_client(Settings(_env_file=None)).cache_dir is None
