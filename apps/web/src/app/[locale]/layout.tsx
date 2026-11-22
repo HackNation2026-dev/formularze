@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { messages } from '@/i18n/messages';
 import { Providers } from '../providers';
-import { themeScript } from '@/lib/theme';
+import { ThemeBootstrap } from '../ThemeBootstrap';
 import '@/styles/globals.css';
 
 export default async function LocaleLayout({
@@ -18,7 +18,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ThemeBootstrap />
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages[locale]}>

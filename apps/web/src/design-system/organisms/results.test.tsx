@@ -271,3 +271,19 @@ it('przelicza READ_ONLY, zachowuje osobne odpowiedzi powtórzeń i nawiguje po f
   expect(screen.getByRole('heading', { name: 'Koniec' })).toBeInTheDocument();
   expect(screen.getByText(labels.finished)).toBeInTheDocument();
 });
+
+it('przecinki kończą linie wartości i zamkniętych obiektów', () => {
+  render(
+    <JsonViewer
+      value={{ text: 'wartość', nested: { a: 1 }, last: true }}
+      labels={jsonCopy}
+    />,
+  );
+  const value = screen.getByText('"wartość"', { exact: true });
+  expect(value.parentElement?.textContent).toBe('"text": "wartość",');
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Rozwiń nested' }),
+  );
+  const close = screen.getAllByText('},', { exact: true });
+  expect(close).toHaveLength(1);
+});

@@ -34,11 +34,13 @@ function Node({
   name,
   labels,
   depth = 0,
+  comma = false,
 }: {
   value: unknown;
   name?: string;
   labels: JsonViewerLabels;
   depth?: number;
+  comma?: boolean;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const [limit, setLimit] = useState(40);
@@ -55,6 +57,7 @@ function Node({
       <div>
         {prefix}
         <Primitive value={value} />
+        {comma && <span className={punctuation}>,</span>}
       </div>
     );
   const entries = Object.entries(value);
@@ -64,7 +67,7 @@ function Node({
       {prefix}
       <Button
         variant="ghost"
-        className="font-mono"
+        className="justify-start! border-0! px-0! py-0! align-middle font-mono font-normal!"
         aria-expanded={open}
         aria-label={`${open ? labels.collapse : labels.expand} ${name ?? ''}`}
         onClick={() => setOpen(!open)}
@@ -74,6 +77,7 @@ function Node({
           {!open && ` … ${entries.length} ${array ? ']' : '}'}`}
         </span>
       </Button>
+      {!open && comma && <span className={punctuation}>,</span>}
       {open && (
         <>
           <div className="border-l border-border pl-4">
@@ -84,10 +88,8 @@ function Node({
                   name={array ? undefined : key}
                   labels={labels}
                   depth={depth + 1}
+                  comma={index < entries.length - 1}
                 />
-                {index < entries.length - 1 && (
-                  <span className={punctuation}>,</span>
-                )}
               </div>
             ))}
             {limit < entries.length && (
@@ -96,7 +98,10 @@ function Node({
               </Button>
             )}
           </div>
-          <span className={punctuation}>{array ? ']' : '}'}</span>
+          <span className={punctuation}>
+            {array ? ']' : '}'}
+            {comma ? ',' : ''}
+          </span>
         </>
       )}
     </div>
@@ -142,7 +147,7 @@ export function JsonViewer({
         role="region"
         aria-label="JSON"
         tabIndex={0}
-        className="max-h-96 overflow-auto rounded-md border border-border bg-surface p-4 font-mono text-sm whitespace-pre"
+        className="max-h-96 min-w-0 max-w-full overflow-auto rounded-md border border-border bg-surface p-4 font-mono text-sm whitespace-pre"
       >
         <Node value={value} labels={labels} />
       </div>

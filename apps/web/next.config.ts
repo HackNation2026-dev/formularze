@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 export default withNextIntl({
   reactStrictMode: true,
   poweredByHeader: false,
+  devIndicators: false,
   images: { unoptimized: true },
   turbopack: { root: fileURLToPath(new URL('.', import.meta.url)) },
 });

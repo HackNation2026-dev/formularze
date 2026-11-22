@@ -21,10 +21,12 @@ export function ChoiceGroup({
     <fieldset
       aria-describedby={description}
       aria-invalid={error ? true : undefined}
-      className="grid gap-2 rounded-lg border border-border-strong p-4"
+      className="min-w-0 border-0 p-0"
     >
-      <legend className="px-2 font-semibold">{label}</legend>
-      {children}
+      <legend className="mb-2 p-0 font-semibold">{label}</legend>
+      <div className="grid gap-2 rounded-lg border border-border-strong p-4">
+        {children}
+      </div>
       {helper && (
         <p id={`${id}-help`} className="text-muted">
           {helper}
