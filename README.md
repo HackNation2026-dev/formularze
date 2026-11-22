@@ -2,6 +2,10 @@
 
 **Z papierowego formularza urzędowego tworzy szkic konfiguracji JSON dla Generatora Formularzy COI — do sprawdzenia i poprawienia przez urzędnika.** Projekt zespołu Formularze na HackNation 2026, zadanie „Cyfryzacja formularzy”.
 
+## Zgłoszenie
+
+[Film konkursowy z polskim lektorem (67 s, MP4)](https://raw.githubusercontent.com/HackNation2026-dev/formularze/2e46e3536d9f2c7e3f94d675132954f5343efbc1/docs/06-prezentacja/HackNation-COI-demo-67s.mp4)
+
 ![PDF źródłowy obok podglądu formularza elektronicznego](docs/06-prezentacja/forumlarz-review.png)
 
 Zrzut wcześniejszej wersji `/review/`: PDF i referencyjny JSON COI, nie wynik AI.
