@@ -1,7 +1,7 @@
 ---
-wersja: 0.1.0
-aktualizacja: 2026-11-21
-status: dokumentacja przygotowawcza
+wersja: 0.2.0
+aktualizacja: 2026-11-22
+status: prezentacja w przygotowaniu
 ---
 
 # Prezentacja i zgłoszenie COI
@@ -9,6 +9,14 @@ status: dokumentacja przygotowawcza
 Cel: pokazać działającą e-usługę z wygenerowanej konfiguracji.
 
 Treść slajdów i scenariusz filmu z liczbami: [SLAJDY-I-FILM](SLAJDY-I-FILM.md).
+
+## Przykładowa prezentacja (material do obróbki)
+
+- Ustalenia i kontekst rozmowy 22.11: [KONTEKST-PREZENTACJI](KONTEKST-PREZENTACJI.md).
+- PDF, 10 slajdów: [prezentacja-szkic-2026-11-22.pdf](prezentacja-szkic-2026-11-22.pdf).
+- Zródlo edytowalne (FigCraft, strona „E - Finalny"): [figcraft/szkice-prezentacji.figcraft](figcraft/szkice-prezentacji.figcraft);
+  obok strony A–D z czterema szkicowymi taliami. Po edycji eksportuj PDF do tego katalogu z data w nazwie.
+- Warianty narracji: [scenariusze-prezentacji](scenariusze-prezentacji.md).
 
 ## Film do 3 minut
 

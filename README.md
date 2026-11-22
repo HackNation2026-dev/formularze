@@ -8,7 +8,29 @@ Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja: `H
 
 ## Stan
 
-Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 196 testów (`make test`) i testy Playwright interfejsu. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
+Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 224 testów (`make test`) i 15 testów Playwright interfejsu `/review/`; osobna aplikacja GUI `apps/web` (Next.js) ma własne testy i CI `web.yml`. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
+
+## Jak to działa i co nas wyróżnia
+
+1. **Rozpoznanie pliku: Google Magika.** Typ pliku rozpoznaje model głęboki Magika (Apache-2.0, ONNX, lokalnie), nie rozszerzenie
+   ani `libmagic`. Zawartość musi zgadzać się z rozszerzeniem, inaczej API zwraca `415 MIME_MISMATCH`. Kod: `src/formgen/ingest/detect.py`.
+2. **Hybrydowy odczyt: warstwa tekstu + OCR na stronę.** PDF czytamy z warstwy tekstowej (`pdfplumber`). Strona, która ma mniej
+   niż 50 znaków tekstu, jest skanem: renderujemy ją (`pypdfium2`, 200 dpi) i przepuszczamy przez Tesseract (`pol`). PDF
+   częściowo zeskanowany ma więc tekst ze źródła tam, gdzie się da, i OCR tylko tam, gdzie trzeba. Długie obrazy dzielimy
+   na strony w pustych wierszach. Kod: `src/formgen/ingest/__init__.py`, `pdf_raster.py`, `image.py`.
+3. **Jeden model dokumentu dla 8 formatów.** PDF, DOC (Apache Tika), DOCX, XLSX, ODS, JPG, PNG trafiają do tej samej
+   struktury: linie, nagłówki, pola do wypełnienia `____`, kratki `☐`. W arkuszach puste komórki z kropkowaną lub kreskowaną dolną krawędzią stają się
+   polami `____`, a wiersze wyboru dostają `☐`. Kod: `src/formgen/ingest/`.
+4. **Lokalny LLM tylko do treści, z gramatyką JSON.** Qwen3.5-4B (Apache-2.0) w llama.cpp wyodrębnia wyłącznie przedmiot
+   wniosku. Serwer wymusza odpowiedź zgodną ze schematem JSON (gramatyka), więc model nie może zwrócić niepoprawnej struktury.
+   Kod: `src/formgen/extract/`.
+5. **Kod robi resztę, deterministycznie.** Strona „Dane”, adresy, pełnomocnictwo, kontakt, zgody, strona końcowa, słowniki COI,
+   warunki JSONata i walidatory buduje kompilator szablonów. Walidator reguł COI sprawdza każdy wynik przed zwrotem.
+   Kod: `src/formgen/compose/`, `src/formgen/schema/`.
+6. **Zawsze jest wynik.** Awaria zdalnego modelu: lokalny llama.cpp na CPU. Awaria modelu w ogóle: ekstraktor heurystyczny.
+   Nagłówki `X-Extractor` i `X-Partial-Result` mówią, która ścieżka zadziałała i co pominięto.
+
+Wszystko działa offline: zero zewnętrznych API w runtime, licencje bez copyleft ([LICENSES](docs/08-implementacja/LICENSES.md)).
 
 ## Zacznij tutaj
 
@@ -107,6 +129,14 @@ npm run check:ui && npm run test:ui   # składnia, format, zasoby; 15 testów Pl
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
 
+## Aplikacja GUI `apps/web` (Next.js)
+
+Druga warstwa interfejsu nad tym samym REST API ([ADR-002](docs/07-decyzje/ADR-002-gui-nextjs.md)): logowanie tokenem, kolejka analizy wielu plików, kolorowany JSON, walidacja, podgląd e-usługi ze stanami JSONata, import JSON z dysku, PL/EN. Działa z mockiem API albo z backendem z tego repo. Nie jest częścią obrazu Docker backendu. Szczegóły i trasy: [apps/web/README.md](apps/web/README.md).
+
+```bash
+cd apps/web && npm ci && npm run dev     # http://localhost:3000/pl ; backend: NEXT_PUBLIC_API_MODE=live i NEXT_PUBLIC_API_BASE=http://localhost:8000 w .env.local
+```
+
 ## Konfiguracja
 
 Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
@@ -132,6 +162,7 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
 | `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | limit czasu na jeden plik (504 po przekroczeniu) |
 | `MAX_BATCH_FILES` | 20 | maksymalna liczba plików w `analyze-batch` (413 powyżej) |
+| `MAX_FILENAME_LENGTH`, `FORBIDDEN_FILENAME_CHARS` | 250, `; : > < / \ \| ' * % $` | walidacja nazwy pliku (400 `INVALID_FILENAME`) |
 
 ## REST API
 
@@ -148,8 +179,10 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),
 `401 UNAUTHORIZED`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`, `415 MIME_MISMATCH` (zawartość sprawdzana
-detektorem Google magika, musi zgadzać się z rozszerzeniem), `422 PROCESSING_FAILED`, `500 INVALID_OUTPUT`
-(pipeline nigdy nie zwraca JSON-a łamiącego reguły), `503 MODEL_UNAVAILABLE`, `504 PROCESSING_TIMEOUT`.
+detektorem Google magika, musi zgadzać się z rozszerzeniem), `500 INVALID_OUTPUT`
+(pipeline nie zwraca JSON-a łamiącego reguły techniczne), `503 MODEL_UNAVAILABLE`, `504 PROCESSING_TIMEOUT`.
+`analyze-batch` dodatkowo: `413 TOO_MANY_FILES`. `validate`: `422 INVALID_FORM_DEFINITION`, `422 INVALID_SAMPLE_VALUES`.
+Każdy endpoint z tokenem: `500 AUTH_MISCONFIGURED`, gdy `AUTH_ENABLED=true` bez `JWT_SECRET`.
 
 Plik jest przetwarzany wyłącznie w pamięci i w katalogu tymczasowym żądania; nic nie jest zapisywane na stałe.
 Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtractor` lub `HeuristicExtractor` po awarii modelu). `X-Partial-Result: true` oznacza, że wynik może nie zawierać całego źródła; `X-Partial-Reasons` podaje przyczyny rozdzielone `; `: `chunk-skipped:<strony>` (fragment pominięty po nieudanych próbach), `llm-truncated:<schemat>` (użyta odpowiedź modelu ucięta na limicie tokenów), `extractor-fallback:<błąd>` (przejście na `HeuristicExtractor`). Każda przyczyna zwiększa `X-Warnings` o 1.
@@ -158,12 +191,13 @@ Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtrac
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `d3f0b65` (22.11 08:40) | x86, bez GPU | 15/15; analiza formularza 05 przez lokalny model 85 s (przed #48/#49/#52: 98–232 s) |
-| Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
-| SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`, 14 kontroli), develop `d3f0b65` (22.11 08:40) | x86 (i7-9750H, 12 vCPU), bez GPU | 14/14; analiza formularza 05 przez lokalny model 85 s (poprzednie przebiegi na starszym kodzie: 98–232 s) |
+| Golden 01 i 05 vs JSON COI (`src/formgen/eval/metric.py`, wyniki z `data/output/`, kod `d3f0b65`) | GPU (GTX 1660 Ti, llama.cpp CUDA) | composite 0,925 / 0,919; recall 0,96 / 0,93; F1 0,86 / 0,84; F1 samego przedmiotu wniosku 0,75 / 0,50; 29 s / 37 s |
+| SCORE harnessu na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm`, develop 22.11 | cache odpowiedzi modelu | 0,753 w ok. 20 s (szum między próbkami modelu ok. 0,017) |
 | Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
 | Qwen3.5-4B Q4, generacja | M4 Metal / GTX 1660 Ti / CPU x86 | 12 / 59 / ok. 11 tok/s |
-| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, bez fallbacku heurystycznego) | GPU (Tailscale) | 0 błędów reguł w 9/9; 29–300 s na formularz; golden F1 01 0,864 / 05 0,843 |
+| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, `LLM_FALLBACK_HEURISTIC=false`) | GPU, 2 formularze naraz | 0 błędów reguł w 9/9; 29–300 s na formularz (najdłużej 08 i 09) |
+| Formularz 08 (6 stron, 136 pól) na samym CPU | x86 | brak pomiaru na kodzie z `main`; jeden pomiar z 22.11 z dodatkową, nieumergowaną zmianą (#55): 1142 s |
 | Tryb bez modelu (`EXTRACTOR=heuristic`) | – | JSON zawsze poprawny; przedmiot wniosku słabszy |
 
 Szczegóły: `docs/08-implementacja/research/` (badania i pomiary), `docs/08-implementacja/DEMO-SETUP.md` (ustawienie na obronę).

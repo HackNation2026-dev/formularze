@@ -1,6 +1,6 @@
 ---
 wersja: 0.4.0
-aktualizacja: 2026-11-21
+aktualizacja: 2026-11-22
 status: implementacja
 ---
 
@@ -44,7 +44,7 @@ COI może nadać wpisom identyfikatory UUID przy rejestracji słownika. Wtedy `n
 
 - **Nazwa:** `Dyscypliny sportowe`.
 - **Źródło:** formularz 09 (wniosek o stypendium sportowe), sekcja papierowa „Dyscypliny sportowe”. Tekst: `docs/02-materialy/tekst/02-materialy/organizator/9. …/Wniosek o przyznanie stypendium.docx.txt`, wiersze 51–72.
-- **Pola:** formularz 09, pole z wyborem dyscyplin. Aktualny wynik `data/output/09_stypendium_sportowe.json` nie ma takiego pola. Model LLM go nie wydziela. Rejestr zadziała, gdy pole z etykietą „dyscyplina” pojawi się w wyniku.
+- **Pola:** formularz 09. Wynik `data/output/09_stypendium_sportowe.json` (22.11) ma pole CHECKBOX `wybierz_dyscypliny_sportowe` (20 opcji) oraz CHECKBOX `inna_dyscyplina` z wartościami słownika i `tooltipMessage` „Proponowany słownik: Dyscypliny sportowe”.
 - **Typ pola:** CHECKBOX. Formularz mówi „wybierz konkretne dyscypliny z listy”. Wnioskodawca może wybrać kilka dyscyplin.
 - **Poza słownikiem:** „rodzaj dyscypliny” (zespołowa, indywidualna – inna, indywidualna – lekkoatletyka) to zwykłe pole RADIO. Te 3 opcje nie tworzą słownika.
 
@@ -99,7 +99,7 @@ COI może nadać wpisom identyfikatory UUID przy rejestracji słownika. Wtedy `n
 
 - **Nazwa:** `Rodzaje podatków i opłat lokalnych`.
 - **Źródło:** ustawa o podatkach i opłatach lokalnych, ustawa o podatku rolnym, ustawa o podatku leśnym, ustawa o utrzymaniu czystości i porządku w gminach. Formularz papierowy 05 ma tekst „z tytułu … (rodzaj podatku)”.
-- **Pola:** formularz 05. JSON referencyjny ma pola TEXT_FIELD `podatek_ktorego_dotyczy_nadplata` i `nazwa_podatku`. Nasz wynik `data/output/05_nadplata_podatku.json` ma pola `nazwa_podatku` i `rodzaj_podatku`.
+- **Pola:** formularz 05. JSON referencyjny ma pola TEXT_FIELD `podatek_ktorego_dotyczy_nadplata` i `nazwa_podatku`. Nasz wynik `data/output/05_nadplata_podatku.json` (22.11) ma pole SELECT `nazwa_podatku` z wartościami słownika i `tooltipMessage` „Proponowany słownik: Rodzaje podatków i opłat lokalnych”; pola `rodzaj_podatku` w nim nie ma.
 - **Typ pola:** SELECT. Jeden wniosek dotyczy jednego podatku.
 - **Uwaga:** gmina może skrócić listę. Zostawia wtedy tylko podatki i opłaty, które pobiera.
 
