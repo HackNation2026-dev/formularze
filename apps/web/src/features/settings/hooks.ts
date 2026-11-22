@@ -15,7 +15,7 @@ export function usePreferences() {
       } catch {
         /* Preferencja w adresie. */
       }
-      router.replace(pathname, { locale: value });
+      router.replace(`${pathname}${window.location.search}`, { locale: value });
     },
   };
 }

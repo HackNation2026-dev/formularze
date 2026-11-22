@@ -37,6 +37,7 @@ export function canRetry(item: QueueItem) {
   return (
     item.status === 'error' &&
     !item.clientError &&
+    ![400, 413, 415, 422].includes(item.error?.status ?? 0) &&
     ![
       'FILE_TOO_LARGE',
       'UNSUPPORTED_MEDIA_TYPE',
