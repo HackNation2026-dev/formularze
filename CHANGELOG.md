@@ -2,7 +2,7 @@
 
 ## Niewydane
 
-- Decyzja ADR-002: GUI jako aplikacja Next.js/React/TypeScript/TanStack w `apps/web/` (atomic design system, mock API); spec i plan w `docs/superpowers/`.
+- Aplikacja GUI `apps/web/` (ADR-002): Next.js 16, React 19, TypeScript, TanStack Query/Table/Form, next-intl PL/EN, Tailwind v4 z tokenami, atomic design system z katalogiem `/design-system`, wszystkie podstawowe widoki (logowanie, upload z kolejką, wynik JSON, walidacja, podgląd e-usługi ze stanami JSONata, otwórz JSON, ustawienia, stany błędów), mock API (MSW), 324 testy jednostkowe i 28 e2e, workflow CI `web.yml`. Spec i plan w `docs/superpowers/`, lista zadań na kolejny etap w `docs/08-implementacja/GUI-DO-ZROBIENIA.md`.
 - Walidatory PL (`schema/validators.py`) i `sample_values` w `POST /api/v1/forms/validate` (#3).
 - Propozycja 3 nowych słowników: dyscypliny sportowe, rasy psów, podatki i opłaty lokalne (#4); wynik formularza 09 z pełną listą dyscyplin (#5).
 - Otwarty model w chmurze przez API z lokalnym zapasem: `LLM_API_KEY`, `LLM_FALLBACK_BASE_URL`, `scripts/legion/serve_gpu.sh`, `docs/08-implementacja/DEMO-SETUP.md` (#6).

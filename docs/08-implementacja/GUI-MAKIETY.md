@@ -109,6 +109,8 @@ Codex przeczytał opis makiet, kod API i brief (nie oglądał ramek FigCraft). Z
 | 13 | JWT | opisane |
 | 14 | rozbieżność stosu | do decyzji zespołu, patrz niżej |
 
-## Otwarta decyzja: stos GUI
+## Stan implementacji (aplikacja `apps/web`)
 
-`FRONTEND-BRIEF.md` zakłada statyczny HTML/JS/CSS bez build stepu serwowany przez FastAPI. Specyfikacja makiet i `docs/04-architektura/pelna-aplikacja.md` zakładają aplikację React/TypeScript (Next.js, TanStack). Same makiety nie zależą od wyboru. `design/tokens.css` wymaga Tailwind v4 (`@import "tailwindcss"`, `@theme`); w statycznym HTML bez build stepu zmienne motywu Light nie powstaną i potrzebny byłby wariant na `:root`. Zmiana stosu wymaga osobnej decyzji z konsekwencjami (zob. `AGENTS.md`).
+Decyzja o stosie zapadła: [ADR-002](../07-decyzje/ADR-002-gui-nextjs.md) (Next.js, React, TypeScript, TanStack). Zaimplementowane i przetestowane (324 testy jednostkowe, 28 e2e): logowanie, upload z kolejką i szczegółami pliku, wynik JSON, walidacja, podgląd e-usługi ze stanami dynamicznymi, otwórz JSON, ustawienia, stany błędów i pustki, katalog `/design-system`, motyw jasny/ciemny, PL/EN, telefon i tablet, mock API zgodny z kontraktem.
+
+Nie zrobione (zadania z dokładnymi instrukcjami w [GUI-DO-ZROBIENIA.md](GUI-DO-ZROBIENIA.md)): źródło PDF, przegląd z edycją, uwagi i raport v2, wsad (Z1); dostępność axe (Z2); CSP i test braku żądań zewnętrznych (Z3); spis licencji (Z4); warunki w instancjach `REPEATING_SECTION` (Z5); `auth_enabled` i limit wsadu w API (Z6); Docker i e2e w CI (Z8); test z prawdziwym backendem (Z9); odbudowa makiet FigCraft i zapis pliku (Z10).

@@ -1,7 +1,7 @@
 ---
 wersja: 0.1.0
 aktualizacja: 2026-11-22
-status: przyjęta przez użytkownika 2026-11-22; wdrożenie w toku (gałąź feat/gui-next)
+status: przyjęta przez użytkownika 2026-11-22; etap 1 wdrożony (patrz GUI-DO-ZROBIENIA.md)
 ---
 
 # ADR-002 — GUI jako aplikacja Next.js / React / TypeScript / TanStack
