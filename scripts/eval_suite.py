@@ -167,8 +167,8 @@ def run_unit(u: Unit, client: CachingClient, settings: Settings) -> None:
         data = u.path.read_bytes()
         kind, _ = detect_kind(data)
         doc = load(data, kind, tika_url=None)
-        u.source = doc.text
-        u.lines = doc.to_prompt_text().splitlines()
+        u.source = doc.to_prompt_text()  # tables included: the model sees them, so labels may come from them
+        u.lines = u.source.splitlines()
         spec = extractor_mod.LlmExtractor(client).extract_document(doc, u.path.name, settings)
         u.form_def = compose(spec)
     except Exception as exc:
