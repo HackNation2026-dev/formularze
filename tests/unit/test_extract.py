@@ -236,13 +236,13 @@ def test_invalid_chunk_is_split_then_skipped_not_fatal():
 
     class FakeClient:
         def __init__(self):
-            self.calls = []
+            self.schemas = []
 
         def complete(self, system, user, out, max_tokens=2048):
-            self.calls.append(out.__name__)
+            self.schemas.append(out.__name__)
             if out is LlmGlobal:
                 return LlmGlobal(title="Wniosek testowy")
-            if "DRUGA" in user and len(self.calls) < 4:
+            if "DRUGA" in user and len(self.schemas) < 4:
                 raise ValueError("LLM returned invalid LlmChunk: truncated")
             return LlmChunk(sections=[LlmSection(page_title="P", title="S", fields=[LlmField(label="Pole A")])])
 
@@ -251,7 +251,7 @@ def test_invalid_chunk_is_split_then_skipped_not_fatal():
     client = FakeClient()
     spec = LlmExtractor(client).extract_document(doc, "x.pdf", Settings(_env_file=None))
     assert spec.title == "Wniosek testowy"
-    assert client.calls.count("LlmChunk") >= 2  # retried on halves
+    assert client.schemas.count("LlmChunk") >= 2  # retried on halves
     assert spec.pages and spec.pages[0].sections[0].fields[0].label == "Pole A"
 
 

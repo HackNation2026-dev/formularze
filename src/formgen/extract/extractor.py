@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 
+from pydantic import BaseModel
 from rapidfuzz import fuzz
 
 from formgen.compose.dictionaries import dictionary_for, with_proposed
@@ -76,6 +77,8 @@ APPLICANT_SECTION_RE = re.compile(
 class LlmExtractor:
     def __init__(self, client: LlmClient | None = None):
         self.client = client
+        # why the last extraction may miss source content; empty = the model saw and answered every chunk
+        self.partial_reasons: list[str] = []
 
     def extract(self, data: bytes, kind: str, filename: str, settings: Settings) -> FormSpec:
         doc = load(data, kind, tika_url=settings.doc_converter_url)
@@ -83,8 +86,9 @@ class LlmExtractor:
 
     def extract_document(self, doc: Document, filename: str, settings: Settings) -> FormSpec:
         client = self.client or make_client(settings)
+        self.partial_reasons = []
         full = doc.to_prompt_text()
-        g = client.complete(SYSTEM, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, max_tokens=512)
+        g = self._complete(client, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, 512)
         sections: list[LlmSection] = []
         for pages, text in chunks(doc):
             sections.extend(self._sections_for(client, pages, text, settings.llm_context_tokens))
@@ -104,16 +108,26 @@ class LlmExtractor:
         try:
             if budget < MIN_ANSWER_TOKENS:
                 raise ValueError(f"prompt leaves {budget} of {context_tokens} context tokens for the answer")
-            return client.complete(SYSTEM, user, LlmChunk, max_tokens=budget).sections
+            return self._complete(client, user, LlmChunk, budget).sections
         except ValueError as exc:
             if depth >= 2 or len(text) < 1200:
                 log.warning("chunk %s skipped after invalid LLM output: %s", pages, str(exc)[:120])
+                self.partial_reasons.append(f"chunk-skipped:{pages}")
                 return []
             log.info("chunk %s invalid (%s); retrying as two halves", pages, str(exc)[:80])
             cut = text.rfind("\n", 0, len(text) // 2) or len(text) // 2
             return self._sections_for(client, pages + "a", text[:cut], context_tokens, depth + 1) + (
                 self._sections_for(client, pages + "b", text[cut:], context_tokens, depth + 1)
             )
+
+    def _complete[T: BaseModel](self, client: LlmClient, user: str, out: type[T], max_tokens: int) -> T:
+        """``client.complete`` that records an answer used although the model stopped at ``max_tokens``. A cut
+        answer that fails to parse raises instead, so a chunk recovered by the halves retry is not partial."""
+        before = len(getattr(client, "calls", ()))
+        answer = client.complete(SYSTEM, user, out, max_tokens=max_tokens)
+        if any(c.get("finish") == "length" for c in getattr(client, "calls", [])[before:]):
+            self.partial_reasons.append(f"llm-truncated:{out.__name__}")
+        return answer
 
 
 def answer_budget(prompt: str, context_tokens: int) -> int:
