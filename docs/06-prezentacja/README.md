@@ -1,5 +1,5 @@
 ---
-wersja: 0.2.0
+wersja: 0.2.1
 aktualizacja: 2026-11-22
 status: prezentacja w przygotowaniu
 ---
@@ -35,3 +35,13 @@ Problem; użytkownik; przepływ; kontrakt COI; adaptery; reguły; rozszerzenia; 
 Opis i tytuł, PDF do 10 slajdów, wynikowe JSON-y, film do 3 minut w dostępnym repozytorium, kod i README. README ma zawierać budowę obrazu, start, konfigurację i opis REST API. Repo jest publiczne.
 
 Pokaż osobno zakres działający, zakres dodatkowy i znane ograniczenia. Nowy formularz podczas obrony może ujawnić nadmierne dopasowanie do przykładów.
+
+## Istniejące nagranie prototypu
+
+[Nagranie 112 s](forumlarz-demo.mp4) pokazuje wcześniejszą lokalną wersję
+`/review/`: PDF i referencję, rzeczywistą generację Qwen3.5-4B bez fallbacku,
+symulację rozliczenia, uwagi i eksport. To kopia artefaktu z 21 listopada,
+pochodzącego z lokalnego pakietu odbioru UI (`evidence/ui/closure/demo.mp4`).
+Nie pokazuje później dodanego wsadu, szybkiej edycji ani GUI Next.js.
+[Zrzut](forumlarz-review.png) pokazuje PDF i JSON referencyjny COI; nie jest
+dowodem ekstrakcji AI. Film nie jest finalnym nagraniem zgłoszeniowym.

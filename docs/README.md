@@ -1,12 +1,12 @@
 ---
-wersja: 0.4.0
+wersja: 0.4.1
 aktualizacja: 2026-11-22
 status: dokumentacja przygotowawcza
 ---
 
 # Dokumentacja
 
-Wersja: 0.4.0. Organizacja docelowa: `HackNation2026-dev`.
+Wersja: 0.4.1. Organizacja docelowa: `HackNation2026-dev`.
 
 | Obszar | Zawartość |
 |---|---|
