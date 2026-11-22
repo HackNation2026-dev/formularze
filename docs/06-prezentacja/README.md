@@ -8,6 +8,8 @@ status: dokumentacja przygotowawcza
 
 Cel: pokazać działającą e-usługę z wygenerowanej konfiguracji.
 
+Treść slajdów i scenariusz filmu z liczbami: [SLAJDY-I-FILM](SLAJDY-I-FILM.md).
+
 ## Film do 3 minut
 
 1. Import blankietu i wywołanie REST API.
@@ -22,6 +24,6 @@ Problem; użytkownik; przepływ; kontrakt COI; adaptery; reguły; rozszerzenia; 
 
 ## Zgłoszenie
 
-Opis i tytuł, PDF do 10 slajdów, wynikowe JSON-y, film do 3 minut w dostępnym repozytorium, kod i README. README ma zawierać budowę obrazu, start, konfigurację i opis REST API. Uzgodnij dostęp jury do prywatnego repo.
+Opis i tytuł, PDF do 10 slajdów, wynikowe JSON-y, film do 3 minut w dostępnym repozytorium, kod i README. README ma zawierać budowę obrazu, start, konfigurację i opis REST API. Repo jest publiczne.
 
 Pokaż osobno zakres działający, zakres dodatkowy i znane ograniczenia. Nowy formularz podczas obrony może ujawnić nadmierne dopasowanie do przykładów.

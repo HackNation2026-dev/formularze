@@ -1,10 +1,14 @@
-# Formularze — COI
+# Formularze — COI: cyfryzacja formularzy papierowych
 
-Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja docelowa: `HackNation2026-dev`. Wersja: **0.4.0**.
+Usługa REST, która z pliku papierowego formularza urzędowego (PDF, DOC, DOCX, ODS, XLSX, JPG, PNG) tworzy plik JSON
+konfiguracji e-formularza dla Generatora Formularzy COI, razem z interfejsem przeglądu dla urzędnika. Działa na własnej
+infrastrukturze, z otwartym modelem językowym uruchamianym lokalnie (bez zewnętrznych API).
+
+Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja: `HackNation2026-dev`. Wersja: **0.4.0**.
 
 ## Stan
 
-Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 82 testy (`make test`). Wyniki dla 7 formularzy do oceny: `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
+Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 196 testów (`make test`) i testy Playwright interfejsu. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
 
 ## Zacznij tutaj
 
@@ -24,7 +28,7 @@ Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG
 python3 scripts/verify_docs.py
 ```
 
-Skrypt kontroluje odnośniki lokalne i sumy materiałów. Nie testuje nieistniejącej jeszcze aplikacji.
+Skrypt kontroluje odnośniki lokalne i sumy materiałów. Aplikację testuje `make test` (sekcja Aplikacja niżej).
 
 ## Wersjonowanie
 
@@ -32,7 +36,7 @@ Zobacz [zasady wersjonowania](docs/00-organizacja/wersjonowanie.md) i [historię
 
 ## Dostęp i sekrety
 
-Repo ma pozostać prywatne. Klucze API przekazuj jury osobno; aplikacja ma czytać je z konfiguracji środowiska. Dane referencyjne pozostają materiałem organizatora. Repo nie nadaje im nowej licencji.
+Repo jest publiczne, więc żaden klucz ani sekret nie trafia do repo ani do obrazu. Klucze API przekazujemy jury osobno; aplikacja czyta je ze zmiennych środowiskowych. Dane referencyjne pozostają materiałem organizatora. Repo nie nadaje im nowej licencji.
 
 ---
 
@@ -71,12 +75,12 @@ Lokalnie bez Dockera (dev):
 
 ## Interfejs przeglądu `/review/`
 
-Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON, wysyła PDF do API albo upuszcza kilka plików naraz i przełącza wyniki na liście wsadu. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
+Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.3 IV i V zadania). Urzędnik wczytuje blankiet PDF i JSON, wysyła PDF do API albo upuszcza kilka plików naraz i przełącza wyniki na liście wsadu. Widzi źródło obok wszystkich pól, symuluje e-usługę z warunkami JSONata, poprawia etykietę lub typ pola albo usuwa pole, dodaje uwagi i pobiera czysty JSON oraz osobny raport uwag. Obraz Docker buduje zasoby UI w etapie Node. Lokalnie:
 
 ```bash
 npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
 make run                         # http://localhost:8000/review/
-npm run check:ui && npm run test:ui   # składnia, format, zasoby; 14 testów Playwright (Chrome)
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 15 testów Playwright (Chrome)
 ```
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).
@@ -129,7 +133,7 @@ Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtrac
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`) | x86, bez GPU | 15/15; analiza przez lokalny model 213 s |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `8a34858` | x86, bez GPU | 15/15; analiza przez lokalny model 98 s |
 | Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
 | SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
 | Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
@@ -171,4 +175,4 @@ i przetwarzany według zawartości.
 - `src/formgen/eval/` – metryka porównania z JSON-ami wzorcowymi
 - `src/formgen/static/review/` – interfejs przeglądu (bez frameworka, moduły ES); `tests/ui/` – testy Playwright
 - `docs/08-implementacja/` – PROBLEM, SPEC, analiza materiałów, research, architektura, licencje
-- `data/input/` – kopie robocze materiałów (tworzy `python3 scripts/sync_materials.py` z `docs/02-materialy/organizator`), `data/output/` – wygenerowane JSON-y dla 7 formularzy do oceny
+- `data/input/` – kopie robocze materiałów (tworzy `python3 scripts/sync_materials.py` z `docs/02-materialy/organizator`), `data/output/` – wygenerowane JSON-y dla 9 formularzy

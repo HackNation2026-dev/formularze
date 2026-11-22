@@ -1,5 +1,5 @@
 ---
-wersja: 0.5.0
+wersja: 0.6.0
 aktualizacja: 2026-11-22
 status: implementacja
 ---
@@ -35,6 +35,16 @@ Rzeczywiste AI: uruchom `make llm` albo wskaż serwer przez `LLM_BASE_URL`, z `E
 
 Wsad: pole „Wiele plików do API” przyjmuje do 20 plików naraz (upuszczenie albo wybór z dysku) w dowolnym formacie API. UI wysyła je jednym żądaniem multipart `files` do `/api/v1/forms/analyze-batch`. Lista „Pliki wsadu” po lewej pokazuje każdy plik ze statusem: „Gotowy” z ekstraktorem albo kod i komunikat błędu tego pliku. Kliknięcie gotowego pliku wczytuje jego konfigurację, a dla PDF także podgląd źródła. Błąd jednego pliku nie zatrzymuje pozostałych.
 
+Szybka edycja: przycisk „Edytuj pole” przy każdym elemencie otwiera edytor w miejscu pola. Urzędnik zmienia w nim etykietę (`title`) i typ (`type`) albo usuwa pole razem z dziećmi. Lista typów zawiera tylko typy tego samego rodzaju: sekcja zmienia się w sekcję, pole w pole. Ostatniego pola sekcji nie da się usunąć osobno, usuwa się całą sekcję. Po usunięciu pola dalsze wiersze w siatce przesuwają się w górę (`y`, `questionOrder`). Pozostałe reguły COI sprawdza „Waliduj strukturę przez API”, np. brak opcji po zmianie na RADIO albo warunek JSONata wskazujący usunięte pole.
+
+Po każdej edycji formularz renderuje się od nowa, odpowiedzi symulacji wracają do wartości początkowych, a SHA-256 jest liczony od nowa. Walidację uruchom ponownie. „Pobierz czysty JSON” zapisuje wersję po edycji. Etykieta pochodzenia dostaje dopisek „Edytowane przez urzędnika (liczba zmian: N)”. Raport uwag (`reportVersion: 2`) zawiera:
+
+- `configurationSha256`: skrót wersji po edycji,
+- `baseConfigurationSha256`: skrót wyniku przed edycją,
+- `editedByClerk` i `edits`: dziennik zmian (`rename`, `retype`, `delete` z listą `removed`).
+
+Uwaga do usuniętego pola zostaje w raporcie z `field.deleted: true` i `field.key: null`, a na liście ma dopisek „pole usunięte”. Może to być powód usunięcia. Klucz `field.key` pozostałych uwag wskazuje bieżące położenie pola po edycji.
+
 ## 2. Scenariusz demonstracji
 
 1. Wczytaj PDF i JSON formularza 05. PDF jest po lewej, 73 elementy czterech stron po prawej. „Przegląd wszystkich pól” nie ukrywa pól zależnych od odpowiedzi.
@@ -44,13 +54,14 @@ Wsad: pole „Wiele plików do API” przyjmuje do 20 plików naraz (upuszczenie
 5. Wczytaj inną konfigurację: lista uwag jest pusta, skrót się zmienia. Pobierz raport przed zmianą wyniku lub odświeżeniem karty, bo UI nie archiwizuje danych.
 6. Wczytaj `tests/ui/fixtures/cross-page.json` (przykład kontrolny, nie wynik AI). Na stronie Pierwsza wybieraj Tak, Nie, Tak. Na stronie Druga pole zależne pokazuje się, znika i znowu się pokazuje; drugie pole blokuje się i odblokowuje tak samo.
 7. Wyślij PDF 05 do API. Obserwuj przetwarzanie, pochodzenie, czas i wynik lub błąd. Uruchom „Waliduj strukturę przez API”. Zielony wynik techniczny nie potwierdza treści.
-8. Upuść na pole „Wiele plików do API” kilka plików z `data/input/04_formularze_do_oceny/` w różnych formatach oraz plik `.txt`. Lista pokazuje gotowe pliki i błąd 415 dla `.txt`. Przełączaj formularze kliknięciem na liście.
+8. Przy polu „Nazwa urzędu” kliknij „Edytuj pole”, zmień etykietę i zapisz. Przy „Kwota” zmień typ na RADIO. Usuń pole „Imię”. Skrót się zmienia, walidacja zgłasza `NO_OPTIONS` dla `kwota`, a raport zawiera trzy zmiany.
+9. Upuść na pole „Wiele plików do API” kilka plików z `data/input/04_formularze_do_oceny/` w różnych formatach oraz plik `.txt`. Lista pokazuje gotowe pliki i błąd 415 dla `.txt`. Przełączaj formularze kliknięciem na liście.
 
 ## 3. Sprawdzenia
 
 ```sh
 npm run check:ui   # zasoby zgodne z package-lock, składnia JS, Prettier
-npm run test:ui    # 14 testów Playwright
+npm run test:ui    # 15 testów Playwright
 make test
 make lint
 ```
@@ -60,9 +71,10 @@ Testy UI używają lokalnego Google Chrome (Playwright `channel: chrome`), osobn
 ## 4. Ograniczenia
 
 - Podgląd źródła obsługuje tylko PDF. Przycisk „Prześlij PDF do API” wysyła tylko PDF. Pozostałe formaty (DOC, DOCX, ODS, XLSX, JPG, PNG) przechodzą przez wsad, bez podglądu źródła.
-- Wybór innego pliku z listy wsadu działa jak wczytanie nowej konfiguracji: uwagi poprzedniego wyniku znikają. Pobierz raport przed przełączeniem.
+- Wybór innego pliku z listy wsadu działa jak wczytanie nowej konfiguracji: uwagi i edycje poprzedniego wyniku znikają. Wynik na liście zostaje bez edycji. Pobierz JSON i raport przed przełączeniem.
 - Renderowane są wszystkie typy elementów z referencji 05. Nieobsługiwany typ (np. sekcja powtarzalna) jest oznaczony jako problem razem z dziećmi.
-- Nie ma pełnego edytora konfiguracji.
+- Edycja obejmuje tylko etykietę, typ i usunięcie pola. Nie ma dodawania pól, opcji, warunków ani cofania zmian. Aby cofnąć edycję, wczytaj wynik ponownie.
+- Walidator API nie ma reguły pustej sekcji. Dlatego UI nie pozwala usunąć ostatniego pola sekcji.
 - Pola rejestrowe są puste i opisane. Słowniki przyjmują wartości wpisane ręcznie jako dane przykładowe. Załączniki symulacji nie są nigdzie wysyłane.
 - Podgląd PDF rysuje płótno i tekst bez wykonywania skryptów PDF i aktywnych adnotacji. Teksty HTML z konfiguracji są wyświetlane jako tekst. Warunki liczy izolowany worker z limitem 2 sekund.
 - Symulacja nie zastępuje walidacji w Generatorze COI: wymagalność, rejestry, podpis i wysyłka nie są sprawdzane.
