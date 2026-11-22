@@ -45,7 +45,6 @@ class LlmGlobal(BaseModel):
     applicant_self: bool = True
     applicant_other_person: bool = False
     applicant_legal_entity: bool = False
-    reasoning: str = ""
 
 
 class LlmChunk(BaseModel):

@@ -91,9 +91,7 @@ class LlmExtractor:
         self.partial_reasons = []
         full = doc.to_prompt_text()
         with ThreadPoolExecutor(max_workers=max(1, settings.llm_parallel)) as pool:
-            g_future = pool.submit(
-                self._complete, client, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, 512
-            )
+            g_future = pool.submit(self._complete, client, GLOBAL_USER.format(text=full[:CHUNK_CHARS]), LlmGlobal, 512)
             per_chunk = list(
                 pool.map(lambda c: self._sections_for(client, c[0], c[1], settings.llm_context_tokens), chunks(doc))
             )
