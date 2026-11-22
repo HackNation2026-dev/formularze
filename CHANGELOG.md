@@ -2,6 +2,7 @@
 
 ## Niewydane
 
+- Decyzja ADR-002: GUI jako aplikacja Next.js/React/TypeScript/TanStack w `apps/web/` (atomic design system, mock API); spec i plan w `docs/superpowers/`.
 - Walidatory PL (`schema/validators.py`) i `sample_values` w `POST /api/v1/forms/validate` (#3).
 - Propozycja 3 nowych słowników: dyscypliny sportowe, rasy psów, podatki i opłaty lokalne (#4); wynik formularza 09 z pełną listą dyscyplin (#5).
 - Otwarty model w chmurze przez API z lokalnym zapasem: `LLM_API_KEY`, `LLM_FALLBACK_BASE_URL`, `scripts/legion/serve_gpu.sh`, `docs/08-implementacja/DEMO-SETUP.md` (#6).
