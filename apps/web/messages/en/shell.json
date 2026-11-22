@@ -21,5 +21,7 @@
   "close": "Close",
   "unknown": "No data",
   "organisms": "Organisms",
-  "templates": "Templates"
+  "templates": "Templates",
+  "activityTitle": "API activity",
+  "activityEmpty": "No API calls yet"
 }

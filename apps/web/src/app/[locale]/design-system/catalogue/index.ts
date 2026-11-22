@@ -45,6 +45,7 @@ import EmptyState from './EmptyState';
 import FileRow from './FileRow';
 import ValidationItem from './ValidationItem';
 import Callout from './Callout';
+import { ApiActivityFeed } from './ApiActivityFeed';
 export const catalogue = [
   { name: 'AppBar', layer: 'organisms', Component: AppBar },
   { name: 'BottomNav', layer: 'organisms', Component: BottomNav },
@@ -93,4 +94,5 @@ export const catalogue = [
   { name: 'FileRow', layer: 'molecules', Component: FileRow },
   { name: 'ValidationItem', layer: 'molecules', Component: ValidationItem },
   { name: 'Callout', layer: 'molecules', Component: Callout },
+  { name: 'ApiActivityFeed', layer: 'organisms', Component: ApiActivityFeed },
 ] as const;

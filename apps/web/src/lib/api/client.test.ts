@@ -80,8 +80,45 @@ describe('klient API', () => {
       detectedType: 'pdf;score=1.000',
       warnings: 2,
       extractor: 'HeuristicExtractor',
+      partialResult: false,
+      partialReasons: [],
     });
     token.mockRestore();
+  });
+  it('odczytuje nagłówki X-Partial-Result i X-Partial-Reasons', async () => {
+    server.use(
+      http.post('*/api/v1/forms/analyze', () =>
+        HttpResponse.json(
+          { title: 'Test', tabs: [], flow: { links: [] } },
+          {
+            headers: {
+              'X-Extractor': 'HeuristicExtractor',
+              'X-Partial-Result': 'true',
+              'X-Partial-Reasons': 'extractor-fallback:LlmUnavailable',
+            },
+          },
+        ),
+      ),
+    );
+    expect(await client.analyze(file())).toHaveProperty('metadata', {
+      processingTimeMs: null,
+      detectedType: null,
+      warnings: null,
+      extractor: 'HeuristicExtractor',
+      partialResult: true,
+      partialReasons: ['extractor-fallback:LlmUnavailable'],
+    });
+  });
+  it('nieprawidłowa lista partial nie psuje metadanych', async () => {
+    server.use(
+      http.post('*/api/v1/forms/analyze', () =>
+        HttpResponse.json(
+          { title: 'Test', tabs: [], flow: { links: [] } },
+          { headers: { 'X-Partial-Result': 'nie-boolean' } },
+        ),
+      ),
+    );
+    expect((await client.analyze(file())).metadata.partialResult).toBe(false);
   });
   it('brak nagłówków nie jest zerowym czasem', async () => {
     server.use(

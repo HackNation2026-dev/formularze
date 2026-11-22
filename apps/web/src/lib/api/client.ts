@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ApiError } from './errors';
+import { recordActivity } from './activity';
 import { tokenStore } from './token-store';
 import {
   formDefinitionSchema,
@@ -27,15 +28,28 @@ export class ApiClient {
     const token = tokenStore.get();
     if (token) headers.set('Authorization', `Bearer ${token}`);
     let response: Response;
+    const startedAt = performance.now();
     try {
       response = await this.fetcher(`${this.base.replace(/\/$/, '')}${path}`, {
         ...init,
         headers,
       });
     } catch (cause) {
+      recordActivity({
+        path,
+        method: init.method ?? 'GET',
+        status: 0,
+        ms: performance.now() - startedAt,
+      });
       if (cause instanceof Error && cause.name === 'AbortError') throw cause;
       throw new ApiError('NETWORK_ERROR', 0, 'NETWORK_ERROR', {}, false);
     }
+    recordActivity({
+      path,
+      method: init.method ?? 'GET',
+      status: response.status,
+      ms: performance.now() - startedAt,
+    });
     const body: unknown = await response.json().catch(() => null);
     if (
       !response.ok &&
@@ -87,6 +101,11 @@ export class ApiClient {
         detectedType: headers.get('X-Detected-Type'),
         warnings: numeric('X-Warnings'),
         extractor: headers.get('X-Extractor'),
+        partialResult: headers.get('X-Partial-Result') === 'true',
+        partialReasons: (headers.get('X-Partial-Reasons') ?? '')
+          .split(',')
+          .map((reason) => reason.trim())
+          .filter(Boolean),
       },
     };
   }

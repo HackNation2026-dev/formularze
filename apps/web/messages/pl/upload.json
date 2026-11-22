@@ -21,6 +21,7 @@
   "type": "Wykryty typ",
   "warnings": "Liczba ostrzeżeń",
   "degraded": "Model niedostępny, użyto ekstraktora heurystycznego.",
+  "partialReasons": "Powód: {reasons}",
   "formatsError": "Nie udało się pobrać formatów. Sprawdź połączenie z API.",
   "loading": "Pobieranie formatów…",
   "summary": "Gotowe: {done} z {total}",

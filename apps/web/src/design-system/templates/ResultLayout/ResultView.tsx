@@ -54,9 +54,7 @@ export function ResultView({ id, mode }: { id: string; mode: ResultMode }) {
       }))}
       active={mode}
     >
-      {result.meta.extractor === 'HeuristicExtractor' && (
-        <Callout>{t('degraded')}</Callout>
-      )}
+      {result.meta.partialResult && <Callout>{t('degraded')}</Callout>}
       {mode === 'json' && (
         <JsonViewer
           value={result.form}

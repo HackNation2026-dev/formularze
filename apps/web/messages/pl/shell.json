@@ -21,5 +21,7 @@
   "close": "Zamknij",
   "unknown": "Brak danych",
   "organisms": "Organizmy",
-  "templates": "Szablony"
+  "templates": "Szablony",
+  "activityTitle": "Aktywność API",
+  "activityEmpty": "Brak wywołań API"
 }

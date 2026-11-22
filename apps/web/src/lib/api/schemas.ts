@@ -245,5 +245,7 @@ export interface AnalyzeResult {
     detectedType: string | null;
     warnings: number | null;
     extractor: string | null;
+    partialResult: boolean;
+    partialReasons: string[];
   };
 }

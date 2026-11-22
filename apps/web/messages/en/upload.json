@@ -21,6 +21,7 @@
   "type": "Detected type",
   "warnings": "Warning count",
   "degraded": "The model is unavailable. A heuristic extractor was used.",
+  "partialReasons": "Reason: {reasons}",
   "formatsError": "Could not load formats. Check your API connection.",
   "loading": "Loading formats…",
   "summary": "Done: {done} of {total}",
