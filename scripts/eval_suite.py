@@ -339,6 +339,9 @@ def main() -> None:
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
         auth_enabled=False,
         llm_fallback_heuristic=False,
+        llm_timeout_seconds=int(
+            os.environ.get("EVAL_LLM_TIMEOUT", "180")
+        ),  # GPU answers in <90 s; a stalled tailnet socket must not hold a worker 10 min
     )
     cache = None if args.no_cache else args.cache
     if cache:
