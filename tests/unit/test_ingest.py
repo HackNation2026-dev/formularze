@@ -51,6 +51,62 @@ def test_docx_16_pages_form09_glyph_checkboxes():
     assert "Dane reprezentanta klubu sportowego" in text
 
 
+def test_xlsx_choice_list_matches_pdf_form03():
+    """Sheet cells hold no box glyphs; the option rows under a 'prompt:' row get the same ☐ markers as the PDF."""
+    form = EVAL / "03_wydanie_zaswiadczenia"
+
+    def choices(ext):
+        doc = load((form / f"Wniosek o wydanie zaświadczenia.{ext}").read_bytes(), ext)
+        return [ln.split("____")[0].strip() for ln in doc.to_prompt_text().splitlines() if ln.startswith("☐")]
+
+    assert len(choices("xlsx")) == 5
+    assert choices("xlsx") == choices("pdf")
+
+
+def test_xlsx_fill_rows_after_prompt_are_not_choices():
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    for row in ("Dane wnioskodawcy:", "Imię i nazwisko ……………………", "Adres ……………………", "Telefon ……………………"):
+        wb.active.append([row])
+    buf = io.BytesIO()
+    wb.save(buf)
+    assert "☐" not in load(buf.getvalue(), "xlsx").to_prompt_text()
+
+
+@pytest.mark.parametrize("ext", ["xlsx", "ods"])
+def test_sheet_dotted_cells_become_fill_lines_like_pdf_form04(ext):
+    """A sheet draws the paper '……' line as empty cells with a dotted bottom border; without a fill marker the
+    LLM cannot tell a label from plain text, so the sheet must carry the same fills as the PDF."""
+    doc = load((EVAL / "04_wynajecie_swietlicy" / f"Wniosek o wynajęcie świetlicy.{ext}").read_bytes(), ext)
+    lines = doc.to_prompt_text().splitlines()
+    assert "2. Przewidywana ilość uczestników : ____" in lines
+    assert "1. Cel wynajęcia świetlicy: ____" in lines
+    assert lines[lines.index("(czytelny podpis wnioskodawcy)") - 1] == "____"
+    assert "____\n____" not in "\n".join(lines)  # a line drawn over two sheet rows stays one fill
+
+
+def test_xlsx_fill_row_above_label_joins_it():
+    import io
+
+    import openpyxl
+    from openpyxl.styles import Border, Side
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws["A1"] = "Wniosek"
+    for col in "BCD":
+        ws[f"{col}2"].border = Border(bottom=Side(style="dotted"))
+    ws["A3"] = "Numer działki"
+    ws["B5"].border = Border(bottom=Side(style="thin"))  # a table grid line is not a fill
+    ws["A6"] = "Uwagi"
+    buf = io.BytesIO()
+    wb.save(buf)
+    assert load(buf.getvalue(), "xlsx").to_prompt_text().splitlines()[1:] == ["Wniosek", "Numer działki ____", "Uwagi"]
+
+
 def test_image_ocr_form05():
     path = next(REF.glob("*.PNG"))
     doc = load(path.read_bytes(), "png")

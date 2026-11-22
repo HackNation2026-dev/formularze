@@ -19,6 +19,11 @@ from formgen.schema.model import FieldType, Validator
 log = logging.getLogger("formgen.extract")
 
 CHUNK_CHARS = 4500  # ~1.5k tokens of Polish text per call; keeps each answer short enough for a 12 tok/s box
+# Qwen3.5 reads Polish form text at 2.8-3.2 chars per token; 2.5 overestimates the prompt, so the answer budget
+# never pushes prompt + answer past the slot context (llama.cpp then stops with finish=length mid-JSON)
+CHARS_PER_TOKEN = 2.5
+TEMPLATE_TOKENS = 64  # chat template around system + user
+MIN_ANSWER_TOKENS = 1024  # below this a chunk is split before the call instead of truncated after it
 GROUNDING_MIN = 60
 # labels the template already covers; dropped if the LLM still emits them
 IDENTITY_LABELS = (
@@ -82,29 +87,38 @@ class LlmExtractor:
         g = client.complete(SYSTEM, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, max_tokens=512)
         sections: list[LlmSection] = []
         for pages, text in chunks(doc):
-            sections.extend(self._sections_for(client, pages, text))
+            sections.extend(self._sections_for(client, pages, text, settings.llm_context_tokens))
         spec = to_spec(g, sections, full, with_validators=settings.with_validators)
         if not spec.title.strip():
             spec.title = filename.rsplit(".", 1)[0]
         return spec
 
-    def _sections_for(self, client: LlmClient, pages: str, text: str, depth: int = 0) -> list[LlmSection]:
-        """One constrained call per chunk. A truncated or malformed answer (small models hit max_tokens on
-        dense pages) is retried on the two halves of the chunk; a chunk that still fails is skipped, so one bad
-        page never discards the whole form."""
+    def _sections_for(
+        self, client: LlmClient, pages: str, text: str, context_tokens: int, depth: int = 0
+    ) -> list[LlmSection]:
+        """One constrained call per chunk; the answer may use all context the prompt leaves free. A chunk whose
+        prompt leaves less than MIN_ANSWER_TOKENS, or whose answer is still truncated or malformed, is retried on
+        its two halves; a chunk that still fails is skipped, so one bad page never discards the whole form."""
+        user = SECTIONS_USER.format(pages=pages, text=text)
+        budget = answer_budget(SYSTEM + user, context_tokens)
         try:
-            return client.complete(
-                SYSTEM, SECTIONS_USER.format(pages=pages, text=text), LlmChunk, max_tokens=2048
-            ).sections
+            if budget < MIN_ANSWER_TOKENS:
+                raise ValueError(f"prompt leaves {budget} of {context_tokens} context tokens for the answer")
+            return client.complete(SYSTEM, user, LlmChunk, max_tokens=budget).sections
         except ValueError as exc:
             if depth >= 2 or len(text) < 1200:
                 log.warning("chunk %s skipped after invalid LLM output: %s", pages, str(exc)[:120])
                 return []
             log.info("chunk %s invalid (%s); retrying as two halves", pages, str(exc)[:80])
             cut = text.rfind("\n", 0, len(text) // 2) or len(text) // 2
-            return self._sections_for(client, pages + "a", text[:cut], depth + 1) + self._sections_for(
-                client, pages + "b", text[cut:], depth + 1
+            return self._sections_for(client, pages + "a", text[:cut], context_tokens, depth + 1) + (
+                self._sections_for(client, pages + "b", text[cut:], context_tokens, depth + 1)
             )
+
+
+def answer_budget(prompt: str, context_tokens: int) -> int:
+    """Tokens left for the answer after a conservative estimate of the prompt."""
+    return context_tokens - int(len(prompt) / CHARS_PER_TOKEN) - TEMPLATE_TOKENS
 
 
 def chunks(doc: Document) -> list[tuple[str, str]]:

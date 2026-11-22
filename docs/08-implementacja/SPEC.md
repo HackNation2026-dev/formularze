@@ -73,6 +73,7 @@ Wersjonowanie: prefiks `/api/v1`. OpenAPI generowane przez FastAPI pod `/docs` i
 | `LLM_BASE_URL` | `http://llm:8080` | llama.cpp server (OpenAI-compatible), lokalny |
 | `LLM_MODEL` | np. `qwen3-8b-q4_k_m` | |
 | `LLM_TIMEOUT_SECONDS` | `300` | |
+| `LLM_CONTEXT_TOKENS` | `8192` | kontekst jednego slotu llama.cpp (`-c` / `-np`); prompt + odpowiedź chunku muszą się zmieścić |
 | `OCR_BACKEND` | `tesseract` / `paddle` / `vlm` | |
 | `OCR_BASE_URL` | – | gdy OCR jako osobny serwis |
 | `DOC_CONVERTER_URL` | – | LibreOffice/Tika service dla `.doc` (parametr integracyjny) |

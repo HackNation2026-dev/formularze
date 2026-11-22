@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     llm_cache_dir: str = ""  # evaluation only: cache model answers on disk (never set in production)
     # one chunk on a CPU-only box can take minutes; after this the heuristic extractor takes over
     llm_timeout_seconds: int = 600
+    # context of ONE server slot (llama.cpp -c / -np); prompt + answer of a chunk call must fit in it
+    llm_context_tokens: int = 8192
     ocr_backend: str = "tesseract"  # tesseract | rapidocr | unlimited
     ocr_base_url: str | None = None
     doc_converter_url: str | None = None  # Apache Tika sidecar for .doc

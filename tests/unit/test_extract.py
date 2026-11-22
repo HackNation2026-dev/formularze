@@ -255,6 +255,38 @@ def test_invalid_chunk_is_split_then_skipped_not_fatal():
     assert spec.pages and spec.pages[0].sections[0].fields[0].label == "Pole A"
 
 
+def test_chunk_answer_budget_fills_free_context_and_oversize_prompt_is_split_before_the_call():
+    from formgen.config import Settings
+    from formgen.extract.extractor import CHARS_PER_TOKEN, LlmExtractor
+    from formgen.ingest.model import Document, Line, Page
+
+    class FakeClient:
+        def __init__(self):
+            self.chunks = []
+
+        def complete(self, system, user, out, max_tokens=2048):
+            if out is LlmGlobal:
+                return LlmGlobal(title="Wniosek testowy")
+            self.chunks.append((len(system) + len(user), max_tokens))
+            return LlmChunk(sections=[])
+
+    ctx = 8192
+    settings = Settings(_env_file=None, llm_context_tokens=ctx)
+    small = Document(pages=[Page(number=1, lines=[Line("Pole A ____", top=0)])])
+    client = FakeClient()
+    LlmExtractor(client).extract_document(small, "x.pdf", settings)
+    [(chars, budget)] = client.chunks
+    assert budget > 2048  # a short prompt leaves most of the slot to the answer
+    assert chars / CHARS_PER_TOKEN + budget <= ctx
+
+    # one sheet page of ~16k chars (form 08 xlsx) does not fit with any answer: split first, never truncate
+    big = Document(pages=[Page(number=1, lines=[Line(f"Pozycja {i} ____ ☐ tak ☐ nie", top=i) for i in range(600)])])
+    client = FakeClient()
+    LlmExtractor(client).extract_document(big, "x.xlsx", settings)
+    assert len(client.chunks) >= 2
+    assert all(chars / CHARS_PER_TOKEN + budget <= ctx for chars, budget in client.chunks)
+
+
 def test_yes_no_attachment_radio_stays_radio_and_dash_labels_dropped():
     g = LlmGlobal(title="x")
     secs = [

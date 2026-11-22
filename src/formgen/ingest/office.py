@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import re
 import zipfile
+from typing import NamedTuple
 from xml.etree import ElementTree as ET
 
 import docx
@@ -12,7 +13,7 @@ from docx.oxml.ns import qn
 from docx.table import Table as DocxTable
 from docx.text.paragraph import Paragraph
 
-from formgen.ingest.model import Document, Line, Page, Table
+from formgen.ingest.model import ENUM_RE, FILL_RE, Document, Line, Page, Table
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 WP = "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
@@ -141,31 +142,114 @@ def parse_xlsx(data: bytes) -> Document:
     for n, ws in enumerate(wb.worksheets, start=1):
         page = Page(number=n)
         y = 0.0
-        for row in ws.iter_rows():
-            cells = [c for c in row if c.value not in (None, "")]
-            if not cells:
-                continue
-            texts = [str(c.value).strip() for c in cells]
-            bold = all(bool(c.font and c.font.b) for c in cells)
-            size = max((c.font.sz for c in cells if c.font and c.font.sz), default=11.0)
-            text = " | ".join(texts) if len(texts) > 1 else texts[0]
+        texts = {row[0].row: [c for c in row if c.value not in (None, "")] for row in ws.iter_rows()}
+        items = [
+            (
+                r,
+                [(c.column, str(c.value).strip()) for c in texts[r]]
+                + [(c.column, FILL) for c in _fill_starts(row, _xlsx_bottom)],
+            )
+            for r, row in ((row[0].row, row) for row in ws.iter_rows())
+        ]
+        for key, text in _with_fills(items):
+            cells = texts[key]
             page.lines.append(
                 Line(
                     text=text,
                     top=y,
-                    x0=float(cells[0].column),
-                    size=float(size),
-                    bold=bold,
+                    x0=float(cells[0].column) if cells else 0.0,
+                    size=float(max((c.font.sz for c in cells if c.font and c.font.sz), default=11.0)),
+                    bold=bool(cells) and all(bool(c.font and c.font.b) for c in cells),
                     checkboxes=text.count("☐") + text.count("□"),
                 )
             )
             y += 12
+        _mark_choice_rows(page.lines)
         if page.lines:
             pages.append(page)
     return Document(pages=pages or [Page(number=1)], source_kind="xlsx")
 
 
+FILL = "____"
+FILL_BORDERS = ("dotted", "dashed", "hair")  # a sheet draws the paper form's '……' line as a dotted cell border
+
+
+def _xlsx_bottom(cell) -> str:
+    return (cell.border.bottom.style if cell.border and cell.border.bottom else None) or ""
+
+
+def _fill_starts(cells, bottom_style):
+    """First cell of each run of empty cells with a dotted/dashed bottom border."""
+    out, prev = [], False
+    for c in cells:
+        on = c.value in (None, "") and any(b in bottom_style(c) for b in FILL_BORDERS)
+        if on and not prev:
+            out.append(c)
+        prev = on
+    return out
+
+
+def _with_fills(rows):
+    """rows: (key, [(column, text)]) in sheet order, text == FILL where a fill line starts. Yields (key, text) per
+    output line. A fill row right above a text row that starts right of the row's first cell is that row's input
+    line ('Cel wynajęcia: ……' in the Word original); any other fill row is a bare '____' line, like the PDF's date
+    and signature lines or the second line of a long answer."""
+    pending = None
+    last = ""
+    for key, items in rows:
+        if any(t != FILL for _, t in items):
+            first = min(c for c, t in items if t != FILL)
+            if pending and min(c for c, _ in pending[1]) > first:
+                items = items + pending[1]
+            elif pending and not last.endswith(FILL):
+                yield pending[0], FILL
+            parts: list[str] = []
+            for _, t in sorted(items, key=lambda it: it[0]):
+                if t == FILL and parts:
+                    parts[-1] += " " + FILL
+                else:
+                    parts.append(t)
+            last = " | ".join(parts)
+            yield key, last
+            pending = None
+            continue
+        if pending and not last.endswith(FILL):  # a fill line drawn over two sheet rows is still one line
+            last = FILL
+            yield pending[0], FILL
+        pending = (key, items) if items else None
+    if pending and not last.endswith(FILL):
+        yield pending[0], FILL
+
+
+def _mark_choice_rows(lines: list[Line]) -> None:
+    """Sheet cells cannot hold the box glyphs a PDF has, so the option rows of a choice list arrive as plain text.
+    Rows under a 'prompt:' row become ☐ options when there are at least two of them and each one finishes the
+    prompt's sentence ('zaświadczenia o:' -> 'okresie posiadania ...'): one cell, lower-case start, short, not a
+    heading. A row with a fill ('inne ……') closes the list, as it does on paper."""
+    for i, prompt in enumerate(lines):
+        if not prompt.text.rstrip(" *").endswith(":"):
+            continue
+        opts: list[Line] = []
+        for ln in lines[i + 1 :]:
+            t = ln.text.strip()
+            if ln.is_heading or not t[:1].islower() or ENUM_RE.match(t) or "|" in t or len(t) > 120 or t.endswith(":"):
+                break
+            opts.append(ln)
+            if FILL_RE.search(t):
+                break
+        if len(opts) >= 2 and not FILL_RE.search(opts[0].text):
+            for ln in opts:
+                ln.text = "☐ " + ln.text
+                ln.checkboxes += 1
+
+
 # ---------------------------------------------------------------- ODS
+class _OdsCell(NamedTuple):
+    column: int
+    value: str | None
+    bottom: str
+
+
 def parse_ods(data: bytes) -> Document:
     """Parse content.xml directly (stdlib); odfpy stays available but the XML is simple enough."""
     NS = {
@@ -174,22 +258,36 @@ def parse_ods(data: bytes) -> Document:
     }
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         root = ET.fromstring(z.read("content.xml"))
+    style_ns = "urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+    fo_ns = "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
+    bottoms: dict[str, str] = {}
+    for st in root.iter(f"{{{style_ns}}}style"):
+        for props in st.iter(f"{{{style_ns}}}table-cell-properties"):
+            b = props.get(f"{{{fo_ns}}}border-bottom") or props.get(f"{{{fo_ns}}}border") or ""
+            bottoms[st.get(f"{{{style_ns}}}name", "")] = b
     pages = []
     for n, tbl in enumerate(root.iter(f"{{{NS['table']}}}table"), start=1):
         page = Page(number=n)
         y = 0.0
-        for row in tbl.iter(f"{{{NS['table']}}}table-row"):
-            texts = []
+        rows = []
+        for r, row in enumerate(tbl.iter(f"{{{NS['table']}}}table-row")):
+            cells, col = [], 0
             for cell in row:
                 if not cell.tag.endswith("table-cell"):
                     continue
                 t = " ".join("".join(p.itertext()).strip() for p in cell.iter(f"{{{NS['text']}}}p")).strip()
-                if t:
-                    texts.append(t)
-            if texts:
-                text = " | ".join(texts)
-                page.lines.append(Line(text=text, top=y, checkboxes=text.count("☐") + text.count("□")))
-                y += 12
+                cells.append(_OdsCell(col, t or None, bottoms.get(cell.get(f"{{{NS['table']}}}style-name", ""), "")))
+                col += int(cell.get(f"{{{NS['table']}}}number-columns-repeated", "1"))
+            rows.append(
+                (
+                    r,
+                    [(c.column, c.value) for c in cells if c.value]
+                    + [(c.column, FILL) for c in _fill_starts(cells, lambda c: c.bottom)],
+                )
+            )
+        for _, text in _with_fills(rows):
+            page.lines.append(Line(text=text, top=y, checkboxes=text.count("☐") + text.count("□")))
+            y += 12
         if page.lines:
             pages.append(page)
     return Document(pages=pages or [Page(number=1)], source_kind="ods")
