@@ -2,6 +2,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
 import pl from '../../../messages/pl/design-system.json';
 import en from '../../../messages/en/design-system.json';
 async function sources(directory: string): Promise<string[]> {
@@ -21,6 +22,36 @@ async function sources(directory: string): Promise<string[]> {
   ).flat();
 }
 describe('kontrakty design systemu', () => {
+  it('atomy i molekuły nie używają rounded-sm ani modyfikatora important', async () => {
+    const files = (
+      await Promise.all(
+        ['atoms', 'molecules'].map((layer) =>
+          sources(path.join(process.cwd(), 'src/design-system', layer)),
+        ),
+      )
+    ).flat();
+    for (const file of files.filter((file) => !/\.test\.tsx?$/.test(file))) {
+      const source = ts.createSourceFile(
+        file,
+        await readFile(file, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true,
+        file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+      function check(node: ts.Node) {
+        if (ts.isStringLiteralLike(node) || ts.isTemplateLiteralToken(node)) {
+          const forbidden = node.text
+            .split(/\s+/)
+            .filter(
+              (token) => /\brounded-sm\b/.test(token) || token.includes('!'),
+            );
+          expect(forbidden, file).toEqual([]);
+        }
+        ts.forEachChild(node, check);
+      }
+      check(source);
+    }
+  });
   it('PL i EN mają identyczne klucze i niepuste teksty', () => {
     function entries(value: unknown, prefix = ''): [string, string][] {
       if (typeof value === 'string') return [[prefix, value]];

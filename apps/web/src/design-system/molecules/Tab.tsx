@@ -22,10 +22,10 @@ export function Tab({
       className={cx(
         target,
         focus,
-        'border-0! border-b-2! bg-surface px-4! py-2!',
+        'rounded-md border-0 border-b-2 bg-surface px-4 py-2',
         active
-          ? 'border-primary! text-primary font-semibold'
-          : 'border-transparent! text-muted',
+          ? 'border-primary text-primary font-semibold'
+          : 'border-transparent text-muted',
         className,
       )}
     />

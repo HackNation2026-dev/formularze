@@ -10,7 +10,7 @@ export function Example({
   children: ReactNode;
 }) {
   return (
-    <div className="grid min-w-0 content-start gap-3 rounded-md border border-border p-4">
+    <div className="grid min-w-0 content-start gap-3 rounded-lg border border-border p-4">
       <p className="text-sm text-muted">{label}</p>
       {children}
     </div>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Badge } from '../atoms/Badge';
+import { badgeBase, cx, tones } from '../atoms/styles';
 import { IconButton } from '../atoms/IconButton';
 export interface ChipProps {
   children: ReactNode;
@@ -8,7 +8,7 @@ export interface ChipProps {
 }
 export function Chip({ children, onRemove, removeLabel }: ChipProps) {
   return (
-    <Badge>
+    <span className={cx(badgeBase, 'rounded-md', tones.neutral)}>
       {children}
       {onRemove && removeLabel && (
         <IconButton
@@ -18,6 +18,6 @@ export function Chip({ children, onRemove, removeLabel }: ChipProps) {
           onClick={onRemove}
         />
       )}
-    </Badge>
+    </span>
   );
 }

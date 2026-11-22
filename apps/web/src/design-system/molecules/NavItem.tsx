@@ -14,7 +14,7 @@ export function NavItem({ active, className, ...props }: NavItemProps) {
         'inline-flex items-center border-l-4 px-4 py-2',
         active
           ? 'border-primary font-semibold text-primary'
-          : 'border-transparent text-muted!',
+          : 'border-transparent text-muted',
         className,
       )}
     />

@@ -26,7 +26,7 @@ export function FileRow({
   return (
     <div
       data-state={state}
-      className="grid min-w-0 gap-3 rounded-md border border-border-strong bg-surface p-4"
+      className="grid min-w-0 gap-3 rounded-lg border border-border-strong bg-surface p-4"
     >
       <div className="flex min-w-0 items-center gap-3">
         <Icon name="file" />

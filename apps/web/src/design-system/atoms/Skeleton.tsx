@@ -3,7 +3,7 @@ export function Skeleton({ label }: { label: string }) {
     <div
       role="status"
       aria-label={label}
-      className="h-6 w-full animate-pulse rounded-sm bg-border motion-reduce:animate-none"
+      className="h-6 w-full animate-pulse rounded-md bg-border motion-reduce:animate-none"
     />
   );
 }
