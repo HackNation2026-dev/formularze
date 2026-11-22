@@ -26,6 +26,7 @@ class PipelineResult:
     violations: list[Violation]
     elapsed_ms: int
     trace: dict = field(default_factory=dict)
+    partial_reasons: list[str] = field(default_factory=list)  # empty = the extractor saw the whole source
 
     @property
     def ok(self) -> bool:
@@ -64,6 +65,7 @@ def run(
     trace: dict = {"kind": kind, "extractor": type(extractor).__name__}
     try:
         spec = extractor.extract(data, kind, filename, settings)
+        partial = list(getattr(extractor, "partial_reasons", []))
     except (ConnectionError, TimeoutError, ValueError) as exc:
         # LLM sidecar down, too slow or invalid output: degrade to the layout-only extractor, never fail the user
         if not settings.llm_fallback_heuristic or type(extractor).__name__ == "HeuristicExtractor":
@@ -73,6 +75,10 @@ def run(
         log.warning("extractor %s failed (%s); falling back to HeuristicExtractor", type(extractor).__name__, exc)
         spec = HeuristicExtractor().extract(data, kind, filename, settings)
         trace.update(extractor="HeuristicExtractor", fallback_reason=str(exc)[:200])
+        # layout signals only: fields the model would have found may be missing
+        partial = [f"extractor-fallback:{type(exc).__name__}"]
+    if partial:
+        log.warning("partial result for %s: %s", filename, partial)
     form = compose(spec)
     violations = check_rules(form)
-    return PipelineResult(form, violations, int((time.perf_counter() - t0) * 1000), trace)
+    return PipelineResult(form, violations, int((time.perf_counter() - t0) * 1000), trace, partial)

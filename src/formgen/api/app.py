@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -45,9 +46,16 @@ async def _process(up: ValidUpload, st: Settings) -> tuple[dict[str, Any], dict[
         "processing_time_ms": result.elapsed_ms,
         "detected_type": up.detected,
         "detected_score": round(up.score, 3),
-        "warnings": sum(v.severity == Severity.WARNING for v in result.violations),
+        "warnings": sum(v.severity == Severity.WARNING for v in result.violations) + len(result.partial_reasons),
         "extractor": str(result.trace.get("extractor", "")),
+        "partial": bool(result.partial_reasons),
+        "partial_reasons": list(result.partial_reasons),
     }
+
+
+def _header_value(text: str, limit: int = 1000) -> str:
+    """HTTP header values are ASCII; anything else becomes ``?``."""
+    return re.sub(r"[^\x20-\x7e]", "?", text)[:limit]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -99,15 +107,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         cl = request.headers.get("content-length")
         up = await validate_upload(file, st, int(cl) if cl and cl.isdigit() else None)
         form, meta = await _process(up, st)
-        return JSONResponse(
-            content=form,
-            headers={
-                "X-Processing-Time-Ms": str(meta["processing_time_ms"]),
-                "X-Detected-Type": f"{meta['detected_type']};score={meta['detected_score']:.3f}",
-                "X-Warnings": str(meta["warnings"]),
-                "X-Extractor": meta["extractor"],
-            },
-        )
+        headers = {
+            "X-Processing-Time-Ms": str(meta["processing_time_ms"]),
+            "X-Detected-Type": f"{meta['detected_type']};score={meta['detected_score']:.3f}",
+            "X-Warnings": str(meta["warnings"]),
+            "X-Extractor": meta["extractor"],
+            # the body stays a clean FormDefinition; content the extractor may have missed is announced here
+            "X-Partial-Result": "true" if meta["partial"] else "false",
+        }
+        if meta["partial"]:
+            headers["X-Partial-Reasons"] = _header_value("; ".join(meta["partial_reasons"]))
+        return JSONResponse(content=form, headers=headers)
 
     @app.post("/api/v1/forms/analyze-batch", tags=["forms"])
     async def analyze_batch(

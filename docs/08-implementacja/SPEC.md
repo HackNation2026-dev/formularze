@@ -43,6 +43,7 @@ Wersjonowanie: prefiks `/api/v1`. OpenAPI generowane przez FastAPI pod `/docs` i
 - Auth: `Authorization: Bearer <JWT>` (gdy `AUTH_ENABLED=true`, domyślnie true; dla demo jury można wyłączyć env-em).
 - Body: `multipart/form-data`, pole `file` (jeden plik). Opcjonalne pola: `office_name` (nazwa urzędu do sekcji "Urząd"), `options` (JSON: `{"dictionaries": true, "validators": true, "dependencies": true}`).
 - 200: `FormDefinition` JSON. Nagłówki: `X-Processing-Time-Ms`, `X-Pipeline-Trace-Id`.
+  `X-Partial-Result: true|false` i przy `true` `X-Partial-Reasons` (przyczyny rozdzielone `; `, każda liczona w `X-Warnings`), żeby urzędnik nie wziął formularza z pominiętym fragmentem źródła za kompletny.
 - Błędy (JSON `{"error": {"code": "...", "message": "...", "details": {...}}}`):
   - `400 INVALID_FILENAME` (R-05, R-06), `400 MISSING_FILE`
   - `401 UNAUTHORIZED` (JWT brak/niepoprawny/wygasły)
