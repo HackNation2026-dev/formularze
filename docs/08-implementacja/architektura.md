@@ -97,6 +97,7 @@ formatów) leżą w `docs/04-architektura/` i są oznaczone jako historyczne.
    POST /api/v1/forms/validate   FormDefinition (+ sample_values) -> valid/errors/warnings   api/app.py -> schema/
    GET  /api/v1/formats, /health, /ready (pyta LLM: degraded / 503)                         api/app.py
    GET  /review/                 UI przeglądu: PDF obok pól, symulacja JSONata, eksport     static/review/ (ES modules, bez frameworka)
+   GUI apps/web (osobny proces)  Next.js nad tym samym REST API; poza obrazem Docker api    apps/web/ (npm run dev, :3000)
    ewaluacja                     metryka vs JSON wzorcowy (F1 pól, typy, SHOW)              eval/metric.py
                                  harness 9 formularzy × formaty, cache odpowiedzi           scripts/eval_suite.py, scripts/eval_fast.sh
    generowanie wyników           data/output/*.json dla formularzy do oceny                scripts/batch.py

@@ -24,7 +24,7 @@ i z `scripts/verify_stack.sh`. Przed obroną sprawdź, czy liczby są nadal aktu
    w JSONata, walidatory PESEL, NIP, REGON, kod pocztowy, dowód osobisty. Propozycja 3 nowych słowników (dyscypliny
    sportowe, rasy psów, rodzaje podatku).
 6. **Bezpieczeństwo i wdrożenie.** Docker, użytkownik bez roota, system plików tylko do odczytu, sieć modelu bez
-   Internetu, JWT, przypięte wersje obrazów, brak sekretów w obrazie. `scripts/verify_stack.sh`: 15/15 na x86 bez GPU.
+   Internetu, JWT, przypięte wersje obrazów, brak sekretów w obrazie. `scripts/verify_stack.sh`: 14/14 na x86 bez GPU.
 7. **Otwarty model, bez zewnętrznych API.** Qwen3.5-4B (Apache-2.0) w llama.cpp. Ten sam model lokalnie na CPU
    (ok. 11 tok/s) albo na własnym serwerze z GPU (ok. 59 tok/s). Przy awarii modelu tryb heurystyczny: JSON zawsze
    poprawny. Brak licencji copyleft w zależnościach.
@@ -47,7 +47,7 @@ i z `scripts/verify_stack.sh`. Przed obroną sprawdź, czy liczby są nadal aktu
 | 1:15–1:45 | Symulacja e-usługi: wybór „Innej osoby” | Pojawia się sekcja pełnomocnictwa: warunek JSONata działa na żywo. |
 | 1:45–2:05 | Błędny PESEL w symulacji | Walidator odrzuca wartość. Słownik krajów w liście rozwijanej. |
 | 2:05–2:25 | Wsad: XLSX i PNG tego samego formularza | Inne formaty dają ten sam formularz. |
-| 2:25–2:45 | Terminal: `scripts/verify_stack.sh` | 15/15: bez roota, sieć modelu bez Internetu, JWT, wynik zgodny z regułami COI. |
+| 2:25–2:45 | Terminal: `scripts/verify_stack.sh` | 14/14: bez roota, sieć modelu bez Internetu, JWT, wynik zgodny z regułami COI. |
 | 2:45–3:00 | Pobranie JSON | Gotowy plik do importu w Generatorze Formularzy COI. |
 
 Nagrywaj na stacku z `docs/08-implementacja/DEMO-SETUP.md`. Przed nagraniem przejdź scenariusz raz na sucho.

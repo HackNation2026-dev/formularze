@@ -14,7 +14,7 @@ czego brakuje, kto co robi teraz. Termin zgłoszenia: potwierdź na Discordzie (
 | Co | Gdzie |
 |---|---|
 | Repo zespołu | `HackNation2026-dev/formularze`, klon `~/.t3/projects/formularze` |
-| Stan dla jury | gałąź `main` = `d160744` (release #60, 22.11 09:05) == `develop`; `verify_stack.sh` 15/15 na x86 CPU dla backendu `d3f0b65` (analyze 85 s). Zawiera też GUI `apps/web` (Next.js, PR #59 Kacpra, poza Dockerem backendu). **`main` zamrożony do 11:00.** |
+| Stan dla jury | gałąź `main` = `d160744` (release #60, 22.11 09:05) == `develop`; `verify_stack.sh` 14/14 na x86 CPU dla backendu `d3f0b65` (analyze 85 s). Zawiera też GUI `apps/web` (Next.js, PR #59 Kacpra, poza Dockerem backendu). **`main` zamrożony do 11:00.** |
 | Praca bieżąca | gałąź `develop`: po 08:15 ma #48/#49/#52 (CPU 05: 207 s -> 122 s), #51 (ten dokument), #53 (README Zgłoszenie), #54 (architektura zgodna z kodem) |
 | Stary katalog scratch | `~/.t3/projects/hacknation-cyfr-forumla` – bez remote, kod rozjechany, **nie pracuj tam**. Projekt T3 wskazuje ten katalog, stąd nowe sesje lądują w złym repo. Przepnij projekt T3 na `~/.t3/projects/formularze`. |
 | Serwer demo (GPU) | Legion, `llmsrv` (Qwen3.5-4B, port 18081), tunel Cloudflare `cfl`, URL zmienia się po restarcie: `docker logs cfl` |
@@ -26,7 +26,7 @@ Kryteria: kompletność 30 %, intuicyjność 20 %, jakość kodu 20 %, wdrożeni
 
 | Wymaganie | Stan | Dowód |
 |---|---|---|
-| REST API, 8 formatów, walidacja uploadu, JWT, limity | JEST | `src/formgen/api`, 212 testów, `verify_stack.sh` 15/15 |
+| REST API, 8 formatów, walidacja uploadu, JWT, limity | JEST | `src/formgen/api`, 212 testów, `verify_stack.sh` 14/14 |
 | JSON zgodny z JSON-ami referencyjnymi COI | JEST | golden 05 / 01 composite 0,92 / 0,92 |
 | Zasady projektowania COI (strony, sekcje, kontakt, FINISH) | JEST | deterministyczny kompilator szablonów |
 | Dokumentacja architektury | JEST | `docs/04-architektura/`, `docs/08-implementacja/` |
@@ -84,7 +84,7 @@ Kolejność na Legionie jest szeregowa, bo CPU i GPU dzielą 12 GB RAM: najpierw
 2. Człowiek: nagranie według tabeli minutażu w `SLAJDY-I-FILM.md` (upload, JSON, wizualizacja, zależna sekcja, słownik i walidacja, drugi format, `verify_stack.sh`).
 3. Plik mp4 do repo (albo link), sekcja „Zgłoszenie” w README: tytuł, opis, link do filmu, PDF, JSON-y.
 
-### Sesja D – release (ZROBIONE: verify_stack 15/15 na develop d3f0b65, analyze CPU 85 s)
+### Sesja D – release (ZROBIONE: verify_stack 14/14 na develop d3f0b65, analyze CPU 85 s)
 
 1. Merge #48, #49, #50 do `develop`.
 2. Na Legionie: `git pull`, `docker compose build`, `scripts/verify_stack.sh` przy zatrzymanym wsadzie GPU.

@@ -39,7 +39,7 @@ i [scenariusze](scenariusze-prezentacji.md); po dalszych decyzjach aktualizuj te
 | 9/9 formularzy z JSON-em w `data/output/`, w tym 08_deklaracja_odpady; 0 bledów reguł | README „Pomiary (stan 22.11)", `STAN-PROJEKTU.md` na develop |
 | Czas na GPU: 29–300 s na formularz; 05 na CPU po optymalizacjach 207 s -> 122 s | README „Pomiary"; develop `926968d` |
 | Golden 05/01: composite 0,92/0,92, recall 0,95/0,96; SCORE smoke 0,7363; eval-warm ~10 s | README „Pomiary" |
-| verify_stack.sh 15/15 (x86, bez GPU) | README „Pomiary" |
+| verify_stack.sh 14/14 (x86, bez GPU) | README „Pomiary" |
 | Maszyna jury bez GPU; model w chmurze na wlasnej infrastrukturze dozwolony, zapas lokalny | README „Model w chmurze" |
 | 08 = deklaracja odpadów: 6 stron, uklad tabelaryczny, sekcje A, B.1, B.2, kratki, daty | `analiza-materialow.md` |
 | Determinizm: model tylko tresc wniosku, reszta kodem, walidator gwarantuje poprawny JSON, fallback heurystyczny | `PROBLEM.md` P7, README pipeline |
