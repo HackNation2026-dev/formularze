@@ -20,7 +20,69 @@ class DesignSystemPage {
       theme,
     );
     await expect(this.page.locator('html')).toHaveAttribute('lang', locale);
+    await this.checkVisualStyles();
     return copy;
+  }
+  async checkVisualStyles() {
+    const groups = [
+      [
+        '#Button button, #IconButton button, #TextInput input, #Textarea textarea, #Select select, #Chip span.inline-flex, #Tab button',
+        '--radius-md',
+      ],
+      [
+        '#FileRow [data-state], #Callout > div > div > :last-child, #Toast > div > div > :last-child, #ValidationItem > div > div > :last-child, #EmptyState > div > div > :last-child',
+        '--radius-lg',
+      ],
+    ] as const;
+    for (const [selector, token] of groups) {
+      const mismatches = await this.page
+        .locator(selector)
+        .evaluateAll((elements, radiusToken) => {
+          const expected = getComputedStyle(document.documentElement)
+            .getPropertyValue(radiusToken)
+            .trim();
+          return elements
+            .filter(
+              (element) =>
+                getComputedStyle(element).borderTopLeftRadius !== expected,
+            )
+            .map((element) => element.outerHTML);
+        }, token);
+      expect(mismatches, selector).toEqual([]);
+    }
+    const stretchedBadges = await this.page
+      .locator('#Badge span.inline-flex, #StatusChip span.inline-flex')
+      .evaluateAll((elements) =>
+        elements
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const parent = element.parentElement!;
+            const parentStyle = getComputedStyle(parent);
+            const available =
+              parent.clientWidth -
+              parseFloat(parentStyle.paddingLeft) -
+              parseFloat(parentStyle.paddingRight);
+            const radius = parseFloat(
+              getComputedStyle(element).borderTopLeftRadius,
+            );
+            return rect.width >= available || radius < rect.height / 2;
+          })
+          .map((element) => element.outerHTML),
+      );
+    expect(stretchedBadges).toEqual([]);
+    const paddingMismatches = await this.page
+      .locator('#Button button')
+      .evaluateAll((elements) => {
+        const expected = getComputedStyle(document.documentElement)
+          .getPropertyValue('--space-4')
+          .trim();
+        return elements
+          .filter(
+            (element) => getComputedStyle(element).paddingLeft !== expected,
+          )
+          .map((element) => element.outerHTML);
+      });
+    expect(paddingMismatches).toEqual([]);
   }
 }
 
