@@ -1,11 +1,13 @@
 ---
 wersja: 0.3.0
-aktualizacja: 2026-11-21
+aktualizacja: 2026-11-22
 status: PROPONOWANY — nie jest decyzją zespołu
 ---
 
 # Proponowany stos COI — Cyfryzacja Formularzy
 
+> **Stan faktyczny (2026-11-22):** aplikacja istnieje; co z tej propozycji wdrożono, a co nie (brak React, brak Tiki jako czytnika wszystkich formatów, model Qwen3.5-4B zamiast Bielika, brak kontenera `web`), opisuje [08-implementacja/architektura.md](../08-implementacja/architektura.md).
+>
 > **Status: PROPONOWANY.** To propozycja do akceptacji przez zespół, nie decyzja ani opis gotowej aplikacji. Opiera się na [konsultacji Fable](../07-decyzje/konsultacja-fable.md) (`claude-fable-5-2`). Wartości RAM i czasu są szacunkami. Licencje oznaczone jako niesprawdzone wymagają weryfikacji. Decyzję zapisuje nowy ADR. [ADR-001](../07-decyzje/ADR-001-stos.md) pozostaje propozycją.
 
 ## Wymagania, które stos musi spełnić (organizator)

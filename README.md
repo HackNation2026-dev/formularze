@@ -122,7 +122,10 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
 | `LLM_API_KEY` | – | klucz do endpointu w chmurze (Bearer), tylko w runtime |
 | `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_MODEL` | – | zapas, zwykle lokalny `http://llm:8080`; używany po pierwszej awarii głównego endpointu |
 | `LLM_CACHE_DIR` | – | tylko ewaluacja: cache sparsowanych odpowiedzi modelu na dysku; nie ustawiać w produkcji |
-| `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | tesseract / rapidocr / unlimited (sidecar GPU) |
+| `LLM_CONTEXT_TOKENS` | 8192 | kontekst jednego slotu llama.cpp; budżet odpowiedzi chunku = kontekst − prompt, poniżej 1024 tokenów chunk jest dzielony |
+| `LLM_PARALLEL` | 2 | wywołania LLM jednego formularza w locie naraz (globalne + chunki); `LLM_PARALLEL × LLM_CONTEXT_TOKENS` ≤ `--ctx-size` serwera |
+| `LLM_WARM_UP` | false (compose: true) | po starcie API prefilluj wspólny prefiks promptów w cache serwera LLM |
+| `OCR_BACKEND`, `OCR_BASE_URL` | tesseract, – | zarezerwowane; kod OCR używa wyłącznie Tesseracta (`pol`) z obrazu `api`, wartości raportuje tylko `/ready` |
 | `DOC_CONVERTER_URL` | – | Apache Tika dla `.doc` |
 | `EXTRACTOR` | llm | `llm` (lokalny llama.cpp), `heuristic` (bez modelu, tylko sygnały układu), `stub` (sam szablon) |
 | `LLM_FALLBACK_HEURISTIC` | true | przy awarii/timeoucie LLM przełącz na `heuristic` zamiast błędu |
