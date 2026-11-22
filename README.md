@@ -87,7 +87,7 @@ Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PR
 
 ## Konfiguracja
 
-Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/api/settings.py`):
+Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
 
 | Zmienna | Default | Opis |
 |---|---|---|
@@ -168,9 +168,14 @@ i przetwarzany według zawartości.
 
 ## Struktura repo
 
+Moduły, ich kontrakty, miary i kierunek importów (sprawdzany w CI przez `lint-imports`): [MODULY](docs/08-implementacja/MODULY.md).
+
 - `src/formgen/schema/` – model `FormDefinition` (pydantic), reguły techniczne, lint JSONata
 - `src/formgen/compose/` – spec pośredni i deterministyczny composer (strona „Dane”, kontakt, FINISH, adresy, JSONata, grid)
-- `src/formgen/api/` – FastAPI, walidacja uploadu, JWT, konfiguracja
+- `src/formgen/api/` – FastAPI, walidacja uploadu, JWT
+- `src/formgen/config.py` – konfiguracja ze zmiennych środowiskowych (wszystkie warstwy)
+- `src/formgen/extract/` – ekstrakcja przedmiotu wniosku (LLM, heurystyka, prompty)
+- `src/formgen/pipeline.py` – spina etapy, fallback heurystyczny
 - `src/formgen/ingest/` – detekcja typu (magika), parsery formatów
 - `src/formgen/eval/` – metryka porównania z JSON-ami wzorcowymi
 - `src/formgen/static/review/` – interfejs przeglądu (bez frameworka, moduły ES); `tests/ui/` – testy Playwright
