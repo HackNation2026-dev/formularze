@@ -1,4 +1,5 @@
-import { api, ApiError, type AnalyzeResult, type Formats } from '@/lib/api';
+import { putResult } from '@/features/results';
+import { api, ApiError, type Formats } from '@/lib/api';
 
 export type QueueStatus = 'queued' | 'processing' | 'done' | 'error';
 export interface QueueItem {
@@ -6,7 +7,7 @@ export interface QueueItem {
   file: File;
   status: QueueStatus;
   error?: ApiError;
-  result?: AnalyzeResult;
+  resultId?: string;
   clientError?: boolean;
 }
 export function validateFile(
@@ -88,13 +89,6 @@ export function createQueueStore(
       emit();
       return added;
     },
-    addLocal(file: File, result: AnalyzeResult) {
-      const id = `local-${crypto.randomUUID()}`;
-      items = [...items, { id, file, status: 'done', result }];
-      emit();
-      return id;
-    },
-    getResult: (id: string) => items.find((item) => item.id === id)?.result,
     getItem: (id: string) => items.find((item) => item.id === id),
     remove(id: string) {
       items = items.filter((item) => item.id !== id);
@@ -119,7 +113,14 @@ export function createQueueStore(
           try {
             const result = await analyze(item.file, controller.signal);
             if (items.some((entry) => entry.id === id)) {
-              update(id, { status: 'done', result });
+              putResult({
+                id,
+                form: result.form,
+                meta: result.metadata,
+                sourceFile: item.file,
+                source: 'api',
+              });
+              update(id, { status: 'done', resultId: id });
               onSuccess?.(id);
             }
           } catch (cause) {

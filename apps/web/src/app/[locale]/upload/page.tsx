@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { tokenStore, useFormats, type ApiError } from '@/lib/api';
-import { useUnauthorized } from '@/features/auth/hooks';
+import { loginHref, useUnauthorized } from '@/features/auth/hooks';
 import {
   queueStore,
   useQueue,
   canRetry,
   type QueueItem,
 } from '@/features/upload';
+import { downloadResult, getResult, useResult } from '@/features/results/store';
 import { ApplicationShell } from '@/design-system/templates/AppShell/Connected';
 import { MasterDetail } from '@/design-system/templates/MasterDetail';
 import { Dropzone } from '@/design-system/organisms/Dropzone';
@@ -33,7 +34,8 @@ function FileDetails({ item }: { item: QueueItem }) {
   const t = useTranslations('upload');
   const shell = useTranslations('shell');
   const router = useRouter();
-  const metadata = item.result?.metadata;
+  const result = useResult(item.resultId ?? '');
+  const metadata = result?.meta;
   return (
     <>
       <Text className="break-all">{item.file.name}</Text>
@@ -60,11 +62,29 @@ function FileDetails({ item }: { item: QueueItem }) {
       {metadata?.extractor === 'HeuristicExtractor' && (
         <Callout>{t('degraded')}</Callout>
       )}
-      {item.result && (
-        <Button onClick={() => router.push(`/results/${item.id}/json`)}>
+      {item.resultId && (
+        <Button onClick={() => router.push(`/results/${item.resultId}/json`)}>
           {t('result')}
         </Button>
       )}
+      {item.resultId && <ResultActions id={item.resultId} />}
+    </>
+  );
+}
+function ResultActions({ id }: { id: string }) {
+  const t = useTranslations('results');
+  const router = useRouter();
+  return (
+    <>
+      <Button
+        variant="secondary"
+        onClick={() => router.push(`/results/${id}/preview`)}
+      >
+        {t('preview')}
+      </Button>
+      <Button variant="secondary" onClick={() => downloadResult(id)}>
+        {t('download')}
+      </Button>
     </>
   );
 }
@@ -79,10 +99,15 @@ export default function Page() {
   const detail = items.find((item) => item.id === selected);
   const close = () => setSelected(null);
   function run() {
-    void queueStore.run(() => {
-      tokenStore.set(null);
-      router.replace('/login?reason=401&returnTo=upload');
-    });
+    void queueStore.run(
+      () => {
+        tokenStore.set(null);
+        router.replace(loginHref('/upload'));
+      },
+      (id) => {
+        if (items.length === 1) router.push(`/results/${id}/json`);
+      },
+    );
   }
   return (
     <ApplicationShell>
@@ -164,7 +189,7 @@ export default function Page() {
                         message: errorMessage(item.error, t),
                       },
                       details:
-                        item.result?.metadata.extractor ===
+                        getResult(item.resultId ?? '')?.meta.extractor ===
                         'HeuristicExtractor' ? (
                           <Callout>{t('degraded')}</Callout>
                         ) : undefined,
@@ -187,15 +212,18 @@ export default function Page() {
                               {t('retry')}
                             </Button>
                           )}
-                          {item.result && (
+                          {item.resultId && (
                             <Button
                               variant="secondary"
                               onClick={() =>
-                                router.push(`/results/${item.id}/json`)
+                                router.push(`/results/${item.resultId}/json`)
                               }
                             >
                               {t('result')}
                             </Button>
+                          )}
+                          {item.resultId && (
+                            <ResultActions id={item.resultId} />
                           )}
                           <Button
                             variant="ghost"

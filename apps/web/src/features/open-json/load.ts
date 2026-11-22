@@ -1,14 +1,8 @@
 import { formDefinitionSchema } from '@/lib/api';
-import { queueStore } from '@/features/upload/store';
+import { putResult } from '@/features/results';
 export async function openJson(file: File) {
   const form = formDefinitionSchema.parse(JSON.parse(await file.text()));
-  return queueStore.addLocal(file, {
-    form,
-    metadata: {
-      extractor: null,
-      detectedType: 'application/json',
-      processingTimeMs: null,
-      warnings: null,
-    },
-  });
+  const id = `local-${crypto.randomUUID()}`;
+  putResult({ id, form, meta: {}, sourceFile: file, source: 'local' });
+  return id;
 }

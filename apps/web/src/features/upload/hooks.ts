@@ -9,6 +9,3 @@ export function useQueue() {
     () => empty,
   );
 }
-export function useResult(id: string) {
-  return useQueue().find((item) => item.id === id)?.result;
-}

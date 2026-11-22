@@ -1,29 +1,21 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { queueStore } from './store';
-import { useQueue, useResult } from './hooks';
+import { useQueue } from './hooks';
 afterEach(() => {
   cleanup();
   for (const item of queueStore.getSnapshot()) queueStore.remove(item.id);
 });
-it('subskrybuje kolejkę i wynik przy dodawaniu i usuwaniu', () => {
+it('subskrybuje dodawanie i usuwanie plików', () => {
   const queue = renderHook(useQueue);
   let id = '';
   act(() => {
-    id = queueStore.addLocal(new File(['{}'], 'local.json'), {
-      form: { title: 'Local', tabs: [], flow: { links: [] } },
-      metadata: {
-        extractor: null,
-        detectedType: null,
-        processingTimeMs: null,
-        warnings: null,
-      },
+    [{ id }] = queueStore.add([new File(['data'], 'a.pdf')], {
+      extensions: ['pdf'],
+      max_upload_size_mb: 1,
     });
   });
-  const result = renderHook(() => useResult(id));
   expect(queue.result.current).toHaveLength(1);
-  expect(result.result.current?.form.title).toBe('Local');
   act(() => queueStore.remove(id));
   expect(queue.result.current).toHaveLength(0);
-  expect(result.result.current).toBeUndefined();
 });

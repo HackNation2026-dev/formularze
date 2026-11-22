@@ -15,7 +15,7 @@ export function NavigationItems({
 }: Pick<NavigationProps, 'items' | 'onNavigate'>) {
   return items.map((item) => (
     <NavItem
-      key={item.href}
+      key={item.label}
       href={item.href}
       active={item.active}
       onClick={(event) => {
@@ -40,7 +40,7 @@ export function BottomNav({ label, ...props }: NavigationProps) {
   return (
     <nav
       aria-label={label}
-      className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-border bg-surface p-2 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 gap-1 [&_a]:min-w-0 [&_a]:justify-center [&_a]:px-1 [&_a]:text-center [&_a]:text-sm border-t border-border bg-surface p-2 md:hidden"
     >
       <NavigationItems {...props} />
     </nav>

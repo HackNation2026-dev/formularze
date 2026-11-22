@@ -1,8 +1,11 @@
 'use client';
+import { useUnauthorized, loginHref } from '@/features/auth/hooks';
+import { usePathname } from '@/i18n/navigation';
+import { useEffect } from 'react';
 import NextLink from 'next/link';
 import { target, focus } from '../../atoms/styles';
 import { useLocale, useTranslations } from 'next-intl';
-import { useResult } from '@/features/results/store';
+import { markResultOpened, useResult } from '@/features/results/store';
 import { jsonLabels, previewLabels } from '@/features/results/labels';
 import { useResultValidation } from '@/features/results/useResultValidation';
 import type { FormDefinition } from '@/lib/api/schemas';
@@ -18,12 +21,16 @@ import { EmptyState, FormField, Callout } from '../../molecules';
 export type ResultMode = 'json' | 'validation' | 'preview';
 export function ResultView({ id, mode }: { id: string; mode: ResultMode }) {
   const result = useResult(id);
+  useEffect(() => {
+    if (result) markResultOpened(id);
+  }, [id, result]);
   const locale = useLocale();
   const t = useTranslations('results');
   const p = useTranslations('preview');
   if (!result)
     return (
       <ResultLayout
+        as="section"
         title={t('title')}
         navigationLabel={t('tabs')}
         tabs={[]}
@@ -37,6 +44,7 @@ export function ResultView({ id, mode }: { id: string; mode: ResultMode }) {
     );
   return (
     <ResultLayout
+      as="section"
       title={result.form.title || t('title')}
       navigationLabel={t('tabs')}
       tabs={(['json', 'validation', 'preview'] as const).map((tab) => ({
@@ -67,6 +75,8 @@ function Validation({ form }: { form: FormDefinition }) {
   const t = useTranslations('results');
   const locale = useLocale();
   const state = useResultValidation(form);
+  const pathname = usePathname();
+  useUnauthorized(state.error, pathname);
   const labels = Object.fromEntries(
     [
       'code',
@@ -102,7 +112,7 @@ function Validation({ form }: { form: FormDefinition }) {
           {state.errorKey === 'unauthorized' && (
             <NextLink
               className={`${target} ${focus} inline-flex items-center text-primary underline`}
-              href={`/${locale}/login?returnTo=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`}
+              href={`/${locale}${loginHref(pathname)}`}
             >
               {t('login')}
             </NextLink>

@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { messages } from '@/i18n/messages';
 import { ResultView } from '@/design-system/templates/ResultLayout/ResultView';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
   act,
   cleanup,
@@ -18,6 +18,10 @@ import { server } from '@/mocks/server';
 import { formDefinitionSchema } from '@/lib/api/schemas';
 import { getResult, putResult, useResult } from './store';
 import { parseSampleValues, useResultValidation } from './useResultValidation';
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/results/ui-UNAUTHORIZED/validation',
+}));
 const form = formDefinitionSchema.parse({ title: 'Test' });
 afterEach(cleanup);
 function wrapper({ children }: { children: ReactNode }) {
@@ -130,7 +134,10 @@ it.each([
   if (status === 401)
     expect(
       screen.getByRole('link', { name: messages.pl.results.login }),
-    ).toHaveAttribute('href', expect.stringContaining('/pl/login?returnTo='));
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('/pl/login?reason=401&returnTo='),
+    );
 });
 it('widok pokazuje brak uwag po poprawnej walidacji', async () => {
   putResult({ id: 'ui-valid', form, meta: {} });

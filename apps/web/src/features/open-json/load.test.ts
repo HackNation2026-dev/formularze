@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { api } from '@/lib/api';
-import { queueStore } from '@/features/upload';
+import { getResult } from '@/features/results';
 import { openJson } from './load';
 function jsonFile(content: string) {
   const file = new File([content], 'form.json');
@@ -11,9 +11,9 @@ it('otwiera lokalny wynik bez żądania analizy', async () => {
   const analyze = vi.spyOn(api, 'analyze');
   const id = await openJson(jsonFile('{"title":"Local","tabs":[]}'));
   expect(id).toMatch(/^local-/);
-  expect(queueStore.getResult(id)?.form.title).toBe('Local');
+  expect(getResult(id)?.form.title).toBe('Local');
   expect(analyze).not.toHaveBeenCalled();
-  queueStore.remove(id);
+  expect(getResult(id)?.source).toBe('local');
   analyze.mockRestore();
 });
 it.each(['{broken', '{}', '[]'])(

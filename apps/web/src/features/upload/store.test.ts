@@ -1,3 +1,4 @@
+import { getResult } from '@/features/results';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError, type AnalyzeResult } from '@/lib/api';
 import { canRetry, createQueueStore, validateFile } from './store';
@@ -94,7 +95,12 @@ describe('kolejka', () => {
     ]);
     queue.retry(item.id);
     await queue.run();
-    expect(queue.getResult(item.id)).toEqual(result);
+    expect(queue.getItem(item.id)?.resultId).toBe(item.id);
+    expect(getResult(item.id)).toMatchObject({
+      form: result.form,
+      meta: result.metadata,
+      source: 'api',
+    });
     expect(analyze).toHaveBeenCalledTimes(3);
   });
   it('anuluje usunięty plik i nie wskrzesza wyniku ani nie uruchamia równoległego żądania', async () => {
@@ -137,17 +143,5 @@ describe('kolejka', () => {
     await queue.run();
     expect(queue.getItem(a.id)?.status).toBe('done');
     expect(analyze).toHaveBeenCalledTimes(2);
-  });
-  it('publikuje lokalny wynik z identyfikatorem local-*', () => {
-    const queue = createQueueStore();
-    const listener = vi.fn();
-    const unsubscribe = queue.subscribe(listener);
-    const id = queue.addLocal(file('form.json'), result);
-    expect(id).toMatch(/^local-/);
-    expect(queue.getResult(id)).toEqual(result);
-    expect(listener).toHaveBeenCalledOnce();
-    unsubscribe();
-    queue.remove(id);
-    expect(listener).toHaveBeenCalledOnce();
   });
 });

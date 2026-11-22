@@ -1,4 +1,5 @@
 'use client';
+import { useLastResultId } from '@/features/results/store';
 import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/navigation';
@@ -71,6 +72,7 @@ export function ApplicationShell({ children }: { children: ReactNode }) {
   const t = useTranslations('shell');
   const locale = useLocale();
   const pathname = usePathname();
+  const lastResultId = useLastResultId();
   const router = useRouter();
   return (
     <AppShell
@@ -79,11 +81,16 @@ export function ApplicationShell({ children }: { children: ReactNode }) {
       controls={<PreferenceControls />}
       navigation={{
         label: t('navigation'),
-        items: (['upload', 'open', 'settings'] as const).map((name) => ({
-          href: `/${locale}/${name}`,
-          label: t(name),
-          active: pathname === `/${name}`,
-        })),
+        items: (['upload', 'result', 'open', 'settings'] as const).map(
+          (name) => ({
+            href: `/${locale}/${name === 'result' ? (lastResultId ? `results/${encodeURIComponent(lastResultId)}/json` : 'upload') : name}`,
+            label: t(name),
+            active:
+              name === 'result'
+                ? pathname.startsWith('/results/')
+                : pathname === `/${name}`,
+          }),
+        ),
         onNavigate: (href) => router.push(href.slice(locale.length + 1)),
       }}
     >

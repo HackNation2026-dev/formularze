@@ -1,7 +1,6 @@
 'use client';
 import type { ReactNode } from 'react';
-import NextLink from 'next/link';
-import { focus, target } from '../atoms/styles';
+import { Tab } from '../molecules/Tab';
 export interface ResultTab {
   id: string;
   label: string;
@@ -31,14 +30,9 @@ export function ResultLayout({
         className="flex flex-wrap gap-4 border-b border-border"
       >
         {tabs.map((tab) => (
-          <NextLink
-            key={tab.id}
-            href={tab.href}
-            aria-current={active === tab.id ? 'page' : undefined}
-            className={`${focus} ${target} inline-flex items-center text-primary underline ${active === tab.id ? 'font-semibold border-b-2 border-primary' : ''}`}
-          >
+          <Tab key={tab.id} href={tab.href} active={active === tab.id}>
             {tab.label}
-          </NextLink>
+          </Tab>
         ))}
       </nav>
       <div className="grid min-w-0 gap-4">{children}</div>

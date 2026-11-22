@@ -8,7 +8,7 @@ export interface AppShellProps extends AppBarProps {
 }
 export function AppShell({ children, navigation, ...bar }: AppShellProps) {
   return (
-    <div className="min-h-dvh pb-8 md:pb-0">
+    <div className="min-h-dvh pb-20 md:pb-0">
       <AppBar {...bar} />
       <div className="flex min-w-0">
         <SideRail {...navigation} />

@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useRouter } from '@/i18n/navigation';
+import { safeReturnTo } from '@/features/auth/hooks';
 import { tokenStore } from '@/lib/api';
 import { ApplicationShell } from '@/design-system/templates/AppShell/Connected';
 import { AuthLayout } from '@/design-system/templates/AuthLayout';
@@ -15,9 +16,7 @@ function Login() {
   const params = useSearchParams();
   const finish = (token: string | null) => {
     tokenStore.set(token);
-    router.replace(
-      params.get('returnTo') === 'settings' ? '/settings' : '/upload',
-    );
+    router.replace(safeReturnTo(params.get('returnTo')));
   };
   return (
     <AuthLayout>
