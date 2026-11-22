@@ -19,8 +19,8 @@ Interfejsy: `/review/` (serwowany przez API, w obrazie Docker) oraz osobna aplik
 W skrócie, co istnieje: jeden serwis Python 3.14 / FastAPI (`src/formgen/`) z potokiem
 `ingest -> extract (LLM przez llama.cpp z gramatyką JSON, fallback heurystyczny) -> compose (deterministyczny
 szablon COI) -> schema (reguły techniczne)`, kontenery `api`, `llm`, `tika` w `compose.yaml`, interfejs przeglądu
-`/review/` w czystych modułach ES serwowanych przez API. Nie ma osobnego frontendu React/TypeScript, Rusta,
-bazy ani kolejki.
+`/review/` w czystych modułach ES serwowanych przez API. W obrazie Docker backendu nie ma frontendu React/TypeScript;
+osobne GUI `apps/web` (Next.js) działa jako odrębny proces. Nie ma Rusta, bazy ani kolejki.
 
 ## Propozycje sprzed implementacji (historyczne, 2026-11-21)
 
@@ -38,7 +38,7 @@ decyzji; nie opisują aplikacji.
 | API | Rust/Axum albo Python/FastAPI | Python/FastAPI (`src/formgen/api/`) |
 | Analiza i adaptery | Python 3.14+ | tak (`src/formgen/ingest/`, `extract/`) |
 | Model | lokalny, po pomiarze | Qwen3.5-4B GGUF w llama.cpp; dopuszczony ten sam otwarty model w chmurze z lokalnym zapasem |
-| GUI | TypeScript | `/review/`: HTML + moduły ES bez frameworka (`src/formgen/static/review/`) |
+| GUI | TypeScript | `/review/`: HTML + moduły ES bez frameworka (`src/formgen/static/review/`); osobno `apps/web` (Next.js, TypeScript), poza obrazem Docker |
 | Dostarczenie | Docker Compose | `compose.yaml`: `api`, `llm`, `tika`; obrazy przypięte, non-root, read-only |
 
 Zasady, które przetrwały: brak bazy i kolejki; plik użytkownika tylko w pamięci na czas żądania; limity i błędy

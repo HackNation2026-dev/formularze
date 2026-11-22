@@ -15,17 +15,17 @@ Status: kolumny „Jak spełniamy” i sekcje B–D uzgodnione z kodem na `devel
 | ID | Wymaganie (cytat/parafraza) | Jak spełniamy | Test |
 |---|---|---|---|
 | R-01 | REST API przyjmujące **pojedynczy plik** blankietu formularza | `POST /api/v1/forms/analyze`, `multipart/form-data`, pole `file` | `tests/api/test_analyze.py` |
-| R-02 | Formaty: `.pdf .doc .docx .ods .xlsx .jpg .jpeg .png` | whitelist rozszerzeń, case-insensitive (`.PDF`, `.JPG` w danych!). `.jpe` traktujemy jak jpeg (bonus, poza listą) | parametryzowany test na 16 plikach referencyjnych |
+| R-02 | Formaty: `.pdf .doc .docx .ods .xlsx .jpg .jpeg .png` | whitelist rozszerzeń, case-insensitive (`.PDF`, `.JPG` w danych!). `ingest/detect.py` mapuje też `.jpe` na jpeg, ale domyślny `ALLOWED_EXTENSIONS` go nie zawiera, więc upload `.jpe` dostaje 415 | parametryzowany test na plikach z `data/input/01_przyklady_formularze/` (`tests/api/test_analyze.py`) |
 | R-03 | Odpowiedź: JSON z konfiguracją formularza do importu | `200 OK`, `application/json`, body = `FormDefinition` (schemat jak `data/input/02_przyklady_json/*.json`) | walidator pydantic |
-| R-04 | Walidacja typu: tylko obsługiwane formaty + **MIME zgodny z rozszerzeniem** | detektor Google `magika` (ONNX w wheelu, bez libmagic) na zawartości + mapa rozszerzenie->kind (`src/formgen/ingest/detect.py`); `.doc` z zawartością DOCX dopuszczone. Niezgodność -> `415 MIME_MISMATCH` | test: `.pdf` z zawartością PNG -> 415 |
+| R-04 | Walidacja typu: tylko obsługiwane formaty + **MIME zgodny z rozszerzeniem** | detektor Google `magika` (ONNX w wheelu, bez libmagic) na zawartości + mapa rozszerzenie->kind (`src/formgen/ingest/detect.py`); `.doc` z zawartością DOCX dopuszczone. Niezgodność -> `415 MIME_MISMATCH` | `test_mime_mismatch_png_as_pdf` |
 | R-05 | Nazwa pliku <= 250 znaków | `len(filename) <= 250` -> inaczej `400` | test 251 znaków |
 | R-06 | Nazwa bez znaków `; : > < / \ \| ' * % $` | regex na zbiorze `;:<>/\\|'*%$` -> `400` | test każdego znaku |
-| R-07 | Max rozmiar pliku **konfigurowalny parametrem aplikacji** | env `MAX_UPLOAD_SIZE_MB` (default 25). Sprawdzane po `Content-Length` i w trakcie streamu -> `413` | test z limitem 1 MB |
-| R-08 | Plik tylko w RAM / tmp **na czas żądania** | plik czytany strumieniowo do `bytes` i przetwarzany wyłącznie w pamięci (`src/formgen/api/upload.py`); żadnego katalogu tymczasowego, uploadów na dysku, bazy ani cache plików | test: po żądaniu katalog tmp pusty |
-| R-09 | Kompletna konfiguracja Docker, odizolowane środowisko | `Dockerfile` + `compose.yaml` (`api`, `llm`, `tika`); OCR w obrazie `api` | `docker compose up` w CI/skrypcie |
+| R-07 | Max rozmiar pliku **konfigurowalny parametrem aplikacji** | env `MAX_UPLOAD_SIZE_MB` (default 25). Sprawdzane po `Content-Length` i w trakcie streamu -> `413` | `test_too_large` (limit 10 MB w teście, plik 11 MB) |
+| R-08 | Plik tylko w RAM / tmp **na czas żądania** | plik czytany strumieniowo do `bytes` i przetwarzany wyłącznie w pamięci (`src/formgen/api/upload.py`); żadnego katalogu tymczasowego, uploadów na dysku, bazy ani cache plików | brak osobnego testu; przegląd kodu (`read_limited` -> `bytes`) |
+| R-09 | Kompletna konfiguracja Docker, odizolowane środowisko | `Dockerfile` + `compose.yaml` (`api`, `llm`, `tika`); OCR w obrazie `api` | `scripts/verify_stack.sh` (stos z `docker compose`, 14 kontroli) |
 | R-10 | Oficjalne obrazy bazowe | `python:3.14.4-slim-trixie`, `node:22.23.1-alpine3.24` (etap budowy UI), `ghcr.io/ggml-org/llama.cpp:server-b12602`, `apache/tika:3.3.0.0` | review Dockerfile |
 | R-11 | Lekkie dystrybucje (np. Alpine) | API na `python:3.14.4-slim-trixie` (Tesseract i `pol` z apt); Alpine odrzucone: pakiety binarne (onnxruntime dla magika, pypdfium2) bez kół musl | rozmiar obrazu w README |
-| R-12 | Jawne wersjonowanie, bez `latest` | wszystkie tagi przypięte (patrz R-10), zależności Pythona w `requirements.txt`, zasoby UI w `package-lock.json` | grep `latest` w CI |
+| R-12 | Jawne wersjonowanie, bez `latest` | wszystkie tagi przypięte (patrz R-10), zależności Pythona w `requirements.txt`, zasoby UI w `package-lock.json` | `scripts/verify_stack.sh` (kontrola `:latest` w `compose.yaml` i `Dockerfile`) |
 | R-13 | Proces na dedykowanym userze z ograniczonymi uprawnieniami | `useradd --uid 1000 app`, `USER app`, `read_only: true`, `tmpfs` na `/tmp`, `cap_drop: [ALL]`, `no-new-privileges` (także dla `llm` i `tika`) | `docker inspect` |
 | R-14 | Tylko wymagane porty | API: `${APP_PORT:-8000}:8000`; `llm` i `tika` bez `ports:`, w sieci `backend` z `internal: true` | compose review |
 | R-15 | Sekrety tylko w runtime (env / secrets) | `JWT_SECRET` itp. z env lub `docker secrets`; brak sekretów w obrazie i repo; `.env.example` | grep w obrazie |
@@ -36,7 +36,7 @@ Status: kolumny „Jak spełniamy” i sekcje B–D uzgodnione z kodem na `devel
 | R-20 | Tylko open source bez copyleft; zero zewnętrznych API/SaaS/MCP; LLM lokalny | [LICENSES.md](LICENSES.md) = lista zależności z licencjami; brak wychodzących połączeń (sieć `backend` `internal`, kontrola `scripts/verify_stack.sh`: brak trasy do Internetu, obraz `api` działa z `--network none`) | CI |
 | R-21 | Jury uruchamia na nowych plikach na żywo | pomiary w `README.md` sekcja „Pomiary”; limit `REQUEST_TIMEOUT_SECONDS` (1800) per plik; wywołania LLM równolegle (`LLM_PARALLEL`), warm-up prefiksu po starcie | benchmark w README |
 
-## B. Kontrakt REST API (propozycja)
+## B. Kontrakt REST API (stan kodu)
 
 Wersjonowanie: prefiks `/api/v1`. OpenAPI generowane przez FastAPI pod `/docs` i `/openapi.json`.
 
@@ -99,13 +99,14 @@ Helper: `scripts/make_token.py` generuje JWT do testów z `JWT_SECRET`.
 
 Mapa MIME (R-04): `pdf: application/pdf`; `doc: application/msword`; `docx: application/vnd.openxmlformats-officedocument.wordprocessingml.document`; `xlsx: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`; `ods: application/vnd.oasis.opendocument.spreadsheet`; `jpg/jpeg: image/jpeg`; `png: image/png`. Uwaga: docx/xlsx to ZIP; magika rozróżnia je po zawartości (`docx` vs `xlsx`), bez dodatkowego odczytu `[Content_Types].xml`.
 
-## E. Deliverables (sekcja 4 zadania) – checklista
-- [ ] Tytuł + szczegółowy opis projektu (`README.md` góra + `docs/opis-projektu.md`)
-- [ ] Prezentacja PDF max 10 slajdów (`deliverables/prezentacja.pdf`)
-- [ ] Wynikowe JSON-y dla 7 formularzy do oceny (`deliverables/json/*.json`) + 2 referencyjne dla porównania
+## E. Deliverables (sekcja 4 zadania) – checklista (stan 22.11)
+Pierwotnie planowane ścieżki `docs/opis-projektu.md`, `deliverables/` i `docs/architektura.md` nie powstały; poniżej faktyczne miejsca.
+- [x] Tytuł + szczegółowy opis projektu (`README.md`, sekcja „Zgłoszenie”)
+- [ ] Prezentacja PDF max 10 slajdów (w toku w `docs/06-prezentacja/`; szkic `prezentacja-szkic-2026-11-22.pdf`)
+- [x] Wynikowe JSON-y dla 7 formularzy do oceny + 2 referencyjne dla porównania (`data/output/*.json`)
 - [ ] Film max 3 min, link w README (otwarte repo)
-- [ ] Repozytorium kodu (public GitHub) z README wg R-17
-- [ ] `docs/architektura.md` (R-18), `docs/LICENSES.md` (R-20)
+- [x] Repozytorium kodu (public GitHub) z README wg R-17
+- [x] [architektura.md](architektura.md) (R-18), [LICENSES.md](LICENSES.md) (R-20)
 - opcjonalnie: screeny, link do demo
 
 ## F. Decyzje (rozstrzygnięte w kodzie)

@@ -1,10 +1,14 @@
 ---
 wersja: 0.4.0
-aktualizacja: 2026-11-21
-status: implementacja
+aktualizacja: 2026-11-22
+status: plan historyczny (21.11 wieczór – 22.11 rano)
 ---
 
 # Plan pracy zespołu (od wieczora 21.11)
+
+> **Zapis historyczny.** Bieżący stan i plan do zgłoszenia: [STAN-PROJEKTU.md](STAN-PROJEKTU.md). Od czasu tego planu:
+> `main` == `develop` (release #69); issue #35–#39 zamknięte, #40 otwarte jako lista odbioru; pliku `compose.gpu.yaml`
+> nie dodano (GPU przez zewnętrzny endpoint `LLM_BASE_URL`, zob. [DEMO-SETUP.md](DEMO-SETUP.md)). Liczby w tekście (np. 168 testów) to stan z 21.11; 22.11: 224 testy pytest.
 
 Gałęzie: `develop` = codzienna praca (domyślna), `main` = tylko stan pokazywany jury. Każdy strumień = osobny branch od `develop`, mały PR do `develop`, merge po zielonym CI (testy, ruff, dokumentacja). `develop` -> `main` tylko przez PR „release” po `scripts/verify_stack.sh`.
 Zasada: `make test` zielone przed każdym PR. Nowe zależności tylko open source bez copyleft, wpis w `docs/08-implementacja/LICENSES.md`.
