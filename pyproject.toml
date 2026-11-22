@@ -1,6 +1,6 @@
 [project]
 name = "cyfryzacja-formularzy"
-version = "0.1.0"
+version = "0.4.0"
 description = "HackNation 2026 / COI: AI service converting paper form files into e-form JSON configuration"
 requires-python = ">=3.14"
 dependencies = [
@@ -22,11 +22,10 @@ dependencies = [
     "jsonata-python",
     "rapidfuzz",
     "magika",
-    "python-magic",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "httpx", "ruff", "pytest-cov"]
+dev = ["pytest", "httpx", "ruff", "pytest-cov", "import-linter"]
 
 [tool.ruff]
 line-length = 120
@@ -53,3 +52,26 @@ formgen = ["static/review/*", "static/review/vendor/*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+# Layer contract: a module may import only the layers below it. `ingest` and `compose` are independent of each other.
+# Checked in CI with `lint-imports`.
+[tool.importlinter]
+root_package = "formgen"
+
+[[tool.importlinter.contracts]]
+name = "Layers: api > pipeline > extract > (compose | ingest) > schema > config"
+type = "layers"
+layers = [
+    "formgen.api",
+    "formgen.pipeline",
+    "formgen.extract",
+    "formgen.compose | formgen.ingest",
+    "formgen.schema",
+    "formgen.config",
+]
+
+[[tool.importlinter.contracts]]
+name = "Evaluation reads only the schema"
+type = "forbidden"
+source_modules = ["formgen.eval"]
+forbidden_modules = ["formgen.api", "formgen.pipeline", "formgen.extract", "formgen.compose", "formgen.ingest"]

@@ -36,8 +36,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from rapidfuzz import fuzz, process
 
-from formgen.api.settings import Settings
 from formgen.compose import compose
+from formgen.config import Settings
 from formgen.eval.metric import FUZZ_MIN, TEMPLATE_TABS, compare
 from formgen.extract import extractor as extractor_mod
 from formgen.extract.llm_client import make_client

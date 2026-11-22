@@ -24,7 +24,7 @@ check "backend has no Internet route"       "! docker run --rm --network \$(dock
 check "no :latest tags in compose/Dockerfile" "! grep -nE ':latest' compose.yaml Dockerfile"
 check "no secret baked into image"          "! docker run --rm --entrypoint sh $(docker compose config --images | grep api) -c 'env | grep -q JWT_SECRET'"
 
-TOKEN=$(docker compose exec -T api python -c "from formgen.api.security import issue_token;from formgen.api.settings import get_settings;print(issue_token(get_settings()))")
+TOKEN=$(docker compose exec -T api python -c "from formgen.api.security import issue_token;from formgen.config import get_settings;print(issue_token(get_settings()))")
 check "401 without token"                   "[ \"\$(curl -s -o /dev/null -w '%{http_code}' -F file=@/etc/hostname localhost:$PORT/api/v1/forms/analyze)\" = 401 ]"
 check "415 on MIME mismatch"                "printf 'not a pdf' > /tmp/fake.pdf && [ \"\$(curl -s -o /dev/null -w '%{http_code}' -H \"Authorization: Bearer $TOKEN\" -F file=@/tmp/fake.pdf localhost:$PORT/api/v1/forms/analyze)\" = 415 ]"
 HDRS=$(mktemp); OUT=$(mktemp)
@@ -34,6 +34,6 @@ echo "      analyze: HTTP $CODE in $(( $(date +%s) - START ))s, $(grep -i '^x-ex
 check "analyze returns 200"                 "[ $CODE = 200 ]"
 check "analyze used the LLM sidecar"        "grep -qi '^x-extractor: LlmExtractor' $HDRS"
 check "result passes COI rules"             "curl -s -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/json' --data-binary @$OUT localhost:$PORT/api/v1/forms/validate | grep -q '\"valid\":true'"
-check "api image works with --network none" "docker run --rm --network none -e EXTRACTOR=heuristic -e AUTH_ENABLED=false -v \"\$PWD/$SAMPLE\":/s.pdf:ro --entrypoint python $(docker compose config --images | grep api) -c \"from formgen import pipeline;from formgen.api.settings import Settings;r=pipeline.run(open('/s.pdf','rb').read(),'pdf','s.pdf',Settings());assert r.ok;print(len(r.form.tabs))\" >/dev/null"
+check "api image works with --network none" "docker run --rm --network none -e EXTRACTOR=heuristic -e AUTH_ENABLED=false -v \"\$PWD/$SAMPLE\":/s.pdf:ro --entrypoint python $(docker compose config --images | grep api) -c \"from formgen import pipeline;from formgen.config import Settings;r=pipeline.run(open('/s.pdf','rb').read(),'pdf','s.pdf',Settings());assert r.ok;print(len(r.form.tabs))\" >/dev/null"
 echo "---"; [ $fails = 0 ] && echo "ALL PASS" || echo "$fails FAILED"
 exit $fails

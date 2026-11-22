@@ -14,8 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from formgen import __version__, pipeline
 from formgen.api.errors import ApiError
 from formgen.api.security import require_auth
-from formgen.api.settings import Settings, get_settings
 from formgen.api.upload import ValidUpload, validate_upload
+from formgen.config import Settings, get_settings
 from formgen.extract.llm_client import make_client
 from formgen.schema import FormDefinition, Severity, check_rules, check_sample_values
 

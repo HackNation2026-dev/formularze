@@ -13,8 +13,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from formgen.api.settings import Settings
 from formgen.compose import FormSpec, compose
+from formgen.config import Settings
 from formgen.schema import FormDefinition, Severity, Violation, check_rules
 
 log = logging.getLogger("formgen.pipeline")

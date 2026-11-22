@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import re
 
-from formgen.api.settings import Settings
 from formgen.compose.dictionaries import dictionary_for, with_proposed
 from formgen.compose.spec import FieldSpec, FormSpec, PageSpec, SectionSpec
+from formgen.config import Settings
 from formgen.extract.extractor import applicant_kinds, is_template_label
 from formgen.extract.schema import LlmGlobal
 from formgen.ingest import Document, load

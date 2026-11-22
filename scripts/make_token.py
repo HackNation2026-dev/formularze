@@ -3,7 +3,7 @@
 import sys
 
 from formgen.api.security import issue_token
-from formgen.api.settings import get_settings
+from formgen.config import get_settings
 
 if __name__ == "__main__":
     s = get_settings()
