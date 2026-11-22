@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import logging
 
 from formgen.compose import jsonata as jq
 from formgen.compose import templates as T
@@ -19,6 +20,8 @@ from formgen.schema.model import (
     TabType,
     Validator,
 )
+
+log = logging.getLogger("formgen.compose")
 
 
 def compose(spec: FormSpec) -> FormDefinition:
@@ -98,13 +101,32 @@ def _build_page(page: PageSpec, v: bool, taken: set[str]) -> Tab:
             fields.append((f, ft))
         resolved.append((s, st, fields))
 
-    def cond_query(conds: list[Condition]) -> list:
+    # "owner is shown only if dep is shown": a field depends on its section; conditions add edges.
+    # A condition that would close a cycle hides its owner forever (STATE_CYCLE), so it is dropped.
+    deps: dict[str, set[str]] = {ft: {st} for _, st, fields in resolved for _, ft in fields}
+
+    def reaches(a: str, b: str) -> bool:
+        seen, todo = set(), [a]
+        while todo:
+            n = todo.pop()
+            if n == b:
+                return True
+            if n not in seen:
+                seen.add(n)
+                todo.extend(deps.get(n, ()))
+        return False
+
+    def cond_query(owner: str, conds: list[Condition]) -> list:
         qs = []
         for c in conds:
             ref = fld_tech.get(c.field) or fld_tech.get(slug(c.field))
             if ref is None:
                 continue  # dangling reference: drop silently, validator would flag jsonata otherwise
             sec, fld = ref
+            if reaches(fld, owner):
+                log.warning("dropping condition of '%s' on '%s': it would make a visibility cycle", owner, fld)
+                continue
+            deps.setdefault(owner, set()).add(fld)
             qs.append(
                 jq.not_equals(page.title, sec, fld, c.value) if c.negate else jq.equals(page.title, sec, fld, c.value)
             )
@@ -112,10 +134,15 @@ def _build_page(page: PageSpec, v: bool, taken: set[str]) -> Tab:
 
     questions: list[Question] = []
     for s, st, fields in resolved:
-        built = [_build_field(f, ft, v, cond_query(f.visible_when)) for f, ft in fields]
+        built = [_build_field(f, ft, v, cond_query(ft, f.visible_when)) for f, ft in fields]
         questions.append(
             section(
-                st, s.title, built, description=s.description, states=cond_query(s.visible_when), repeating=s.repeating
+                st,
+                s.title,
+                built,
+                description=s.description,
+                states=cond_query(st, s.visible_when),
+                repeating=s.repeating,
             )
         )
     return Tab(title=page.title, type=TabType.MAIN, questions=layout(questions))

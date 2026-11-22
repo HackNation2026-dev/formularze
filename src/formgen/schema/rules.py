@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from formgen.compose.dictionaries import SELECT_ONLY
-from formgen.schema.jsonata_lint import lint_query
+from formgen.schema.jsonata_lint import lint_query, state_cycles
 from formgen.schema.model import (
     CONTAINER_TYPES,
     DICTIONARY_TYPES,
@@ -91,6 +91,10 @@ def check_rules(form: FormDefinition) -> list[Violation]:
                     if inner.type in INPUT_TYPES:
                         err("INPUT_ON_FINISH", f"input field '{inner.techName}' on FINISH tab", qpath)
             _check_grid(q, qpath, err, warn)
+
+    for cycle in state_cycles(form):
+        names = " -> ".join(fld or sec for _, sec, fld in [*cycle, cycle[0]])
+        err("STATE_CYCLE", f"visibility depends on itself, never shown: {names}", f"tabs['{cycle[0][0]}']")
 
     # R-T7 flow: links chain tabs in order
     ids = [t.id for t in tabs]

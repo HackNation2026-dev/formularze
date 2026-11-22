@@ -1,8 +1,10 @@
 """Static lint of JSONata ``states[].query`` strings against the form structure.
 
-Two checks:
+Checks:
 1. syntax: the query must parse with ``jsonata-python`` (Apache-2.0).
-2. references: every ``tabs['T' in title].questions['s' in field.techName]
+2. cycles (``state_cycles``): an element whose visibility depends, directly or
+   through other conditions, on itself can never be shown.
+3. references: every ``tabs['T' in title].questions['s' in field.techName]
    .field.repeatingSectionGrid['f' in field.techName]`` path must point at an
    existing tab / section / field, and a quoted literal compared with ``in``
    must be one of that field's option names (when the field has options).
@@ -86,3 +88,47 @@ def lint_query(query: str, form: FormDefinition) -> list[LintIssue]:
                     )
                 )
     return issues
+
+
+Node = tuple[str, str, str]  # (tab title, section techName, field techName or "" for the section itself)
+
+
+def state_cycles(form: FormDefinition) -> list[list[Node]]:
+    """Cycles in the 'visible only if' graph: element -> referenced field, field -> its section."""
+    deps: dict[Node, set[Node]] = {}
+    for tab in form.tabs:
+        for q in tab.questions:
+            sec = q.field
+            sec_node = (tab.title, sec.techName, "")
+            deps.setdefault(sec_node, set()).update(_state_refs(sec))
+            for f in sec.iter_fields():
+                if f is not sec:
+                    deps.setdefault((tab.title, sec.techName, f.techName), set()).update({sec_node, *_state_refs(f)})
+    cycles: list[list[Node]] = []
+    state: dict[Node, int] = {}  # 1 = on the DFS stack, 2 = done
+    stack: list[Node] = []
+
+    def visit(n: Node) -> None:
+        state[n] = 1
+        stack.append(n)
+        for m in deps.get(n, ()):
+            if state.get(m) == 1:
+                cycles.append(stack[stack.index(m) :])
+            elif m not in state:
+                visit(m)
+        stack.pop()
+        state[n] = 2
+
+    for n in deps:
+        if n not in state:
+            visit(n)
+    return cycles
+
+
+def _state_refs(f) -> set[Node]:
+    return {
+        (m.group("tab"), m.group("sec"), m.group("fld") or "")
+        for s in f.states
+        for m in _REF_RE.finditer(s.query)
+        if m.group("sec")
+    }

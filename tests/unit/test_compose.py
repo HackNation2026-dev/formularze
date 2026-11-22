@@ -5,6 +5,8 @@ import json
 import pytest
 
 from formgen.compose import ApplicantKinds, FieldSpec, FormSpec, PageSpec, SectionSpec, compose
+from formgen.compose import jsonata as jq
+from formgen.compose.builders import show
 from formgen.compose.spec import Condition
 from formgen.eval.metric import compare
 from formgen.schema import FieldType, FormDefinition, Severity, check_rules
@@ -195,3 +197,57 @@ def test_rule_rejects_predefined_dictionary_outside_select():
     kraj.type = FieldType.RADIO
     codes = [v.code for v in check_rules(form) if v.severity == Severity.ERROR]
     assert "DICTIONARY_SELECT_ONLY" in codes
+
+
+def _cyclic_spec() -> FormSpec:
+    """Self-reference, mutual reference and a section shown by its own field: all would stay hidden forever."""
+    return FormSpec(
+        title="x",
+        pages=[
+            PageSpec(
+                title="P",
+                sections=[
+                    SectionSpec(
+                        title="Wybory",
+                        fields=[
+                            FieldSpec(label="Tryb", kind=FieldType.RADIO, options=["A", "B"]),
+                            FieldSpec(label="Sam", visible_when=[Condition(field="sam", value="x")]),
+                            FieldSpec(label="Pierwsze", visible_when=[Condition(field="drugie", value="x")]),
+                            FieldSpec(label="Drugie", visible_when=[Condition(field="pierwsze", value="x")]),
+                            FieldSpec(label="Dla A", visible_when=[Condition(field="tryb", value="A")]),
+                        ],
+                    ),
+                    SectionSpec(
+                        title="Zamknięta",
+                        visible_when=[Condition(field="wewnatrz", value="x")],
+                        fields=[FieldSpec(label="Wewnątrz")],
+                    ),
+                ],
+            )
+        ],
+    )
+
+
+def test_rule_flags_condition_cycles():
+    form = compose(SPEC_05)
+    tab = form.tabs[1]
+    sec = tab.questions[0].field
+    f = next(sec.iter_fields())
+    f.states = [show(jq.equals(tab.title, sec.techName, f.techName, "x"))]
+    codes = [v.code for v in check_rules(form) if v.severity == Severity.ERROR]
+    assert codes == ["STATE_CYCLE"]
+
+
+def test_golden_forms_have_no_condition_cycles(golden_dict):
+    codes = [v.code for v in check_rules(FormDefinition.from_json_dict(golden_dict))]
+    assert "STATE_CYCLE" not in codes
+
+
+def test_compose_drops_conditions_that_would_close_a_cycle():
+    form = compose(_cyclic_spec())
+    assert not [v for v in check_rules(form) if v.severity == Severity.ERROR]
+    fields = {f.techName: f for _, f in form.iter_fields()}
+    assert fields["dla_a"].states, "an acyclic condition must survive"
+    assert not fields["sam"].states
+    assert bool(fields["pierwsze"].states) != bool(fields["drugie"].states), "exactly one side of the pair is kept"
+    assert not fields["zamknieta"].states
