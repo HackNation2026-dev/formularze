@@ -20,7 +20,7 @@ from typing import Any
 import jsonata
 from rapidfuzz import fuzz
 
-from formgen.schema.jsonata_lint import _LITERAL_BEFORE_RE, _REF_RE
+from formgen.schema.jsonata_lint import _LITERAL_BEFORE_RE, _REF_RE, _unquote
 from formgen.schema.model import CONTAINER_TYPES, FormDefinition, StateType
 
 FUZZ_MIN = 80
@@ -224,9 +224,9 @@ def _refs(queries: tuple[str, ...]) -> dict[tuple[str, str, str], set[str]]:
         for m in _REF_RE.finditer(q):
             if not m.group("fld"):
                 continue
-            lits = out.setdefault((m.group("tab"), m.group("sec"), m.group("fld")), set())
+            lits = out.setdefault(tuple(_unquote(m.group(g)) for g in ("tab", "sec", "fld")), set())
             if lit := _LITERAL_BEFORE_RE.search(q[: m.start()]):
-                lits.add(lit.group("lit"))
+                lits.add(_unquote(lit.group("lit")))
     return out
 
 

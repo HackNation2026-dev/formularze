@@ -12,6 +12,7 @@ Checks:
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
@@ -19,11 +20,30 @@ import jsonata
 
 from formgen.schema.model import FormDefinition
 
-_TAB = r"tabs\['(?P<tab>[^']*)' in title\]"
-_SEC = r"\.questions\['(?P<sec>[^']*)' in field\.techName\]"
-_FLD = r"\.field\.repeatingSectionGrid\['(?P<fld>[^']*)' in field\.techName\]"
+# a JSONata string literal in either quote style, backslash escapes included
+_STR = r"""(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")"""
+_TAB = rf"tabs\[(?P<tab>{_STR}) in title\]"
+_SEC = rf"\.questions\[(?P<sec>{_STR}) in field\.techName\]"
+_FLD = rf"\.field\.repeatingSectionGrid\[(?P<fld>{_STR}) in field\.techName\]"
 _REF_RE = re.compile(_TAB + r"(?:" + _SEC + r")?(?:" + _FLD + r")?")
-_LITERAL_BEFORE_RE = re.compile(r'"(?P<lit>[^"]*)"\s+in\s+$')
+_LITERAL_BEFORE_RE = re.compile(rf"(?P<lit>{_STR})\s+in\s+$")
+
+
+def _unquote(token: str | None) -> str | None:
+    """Value of a JSONata string literal in either quote style (JSON escapes, plus ``\\'``)."""
+    if token is None:
+        return None
+
+    def esc(m: re.Match) -> str:
+        if m.group(0) == '"':
+            return '\\"'
+        return "'" if m.group(1) == "'" else m.group(0)
+
+    body = re.sub(r"\\(.)|\"", esc, token[1:-1])
+    try:
+        return json.loads(f'"{body}"')
+    except ValueError:
+        return token[1:-1]
 
 
 @dataclass(frozen=True)
@@ -62,7 +82,7 @@ def lint_query(query: str, form: FormDefinition) -> list[LintIssue]:
         return issues
     idx = _index(form)
     for m in _REF_RE.finditer(query):
-        tab, sec, fld = m.group("tab"), m.group("sec"), m.group("fld")
+        tab, sec, fld = (_unquote(m.group(g)) for g in ("tab", "sec", "fld"))
         if tab not in idx:
             issues.append(LintIssue("JSONATA_REF_TAB", f"tab '{tab}' not found"))
             continue
@@ -80,11 +100,12 @@ def lint_query(query: str, form: FormDefinition) -> list[LintIssue]:
         if options:
             # literal immediately before this reference: ``"X" in tabs[...]``
             lit = _LITERAL_BEFORE_RE.search(query[: m.start()])
-            if lit and lit.group("lit") not in options:
+            value = _unquote(lit.group("lit")) if lit else None
+            if value is not None and value not in options:
                 issues.append(
                     LintIssue(
                         "JSONATA_LITERAL",
-                        f"'{lit.group('lit')}' is not an option of '{fld}' ({sorted(options)})",
+                        f"'{value}' is not an option of '{fld}' ({sorted(options)})",
                     )
                 )
     return issues
@@ -127,7 +148,7 @@ def state_cycles(form: FormDefinition) -> list[list[Node]]:
 
 def _state_refs(f) -> set[Node]:
     return {
-        (m.group("tab"), m.group("sec"), m.group("fld") or "")
+        (_unquote(m.group("tab")), _unquote(m.group("sec")), _unquote(m.group("fld")) or "")
         for s in f.states
         for m in _REF_RE.finditer(s.query)
         if m.group("sec")
