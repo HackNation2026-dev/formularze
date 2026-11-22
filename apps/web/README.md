@@ -43,7 +43,7 @@ NEXT_PUBLIC_API_MODE=live
 NEXT_PUBLIC_API_BASE=
 ```
 
-Tryb `live` jest domyślny (także w `dev`); `mock` włącza się wyłącznie jawną zmienną `NEXT_PUBLIC_API_MODE=mock` i uruchamia MSW w przeglądarce przed renderowaniem zawartości. E2e domyślnie używa mocka; `PLAYWRIGHT_API_MODE=live` uruchamia je na prawdziwym backendzie. Zmienne `NEXT_PUBLIC_API_BASE` adresuje backend wprost, a puste pole oznacza API pod tym samym origin: `next.config.ts` przekazuje proxy `/health`, `/ready` i `/api/:path*` na `API_INTERNAL_URL` (domyślnie `http://127.0.0.1:8001`), więc ten sam origin nie wymaga CORS ani udostępniania nagłówków `X-*`.
+Tryb `live` jest domyślny (także w `dev`); `mock` włącza się wyłącznie jawną zmienną `NEXT_PUBLIC_API_MODE=mock` i uruchamia MSW w przeglądarce przed renderowaniem zawartości. E2e domyślnie używa mocka; `PLAYWRIGHT_API_MODE=live` uruchamia je na prawdziwym backendzie. Zmienne `NEXT_PUBLIC_API_BASE` adresuje backend wprost, a puste pole oznacza API pod tym samym originem: `/health` i `/ready` przekazuje `rewrites` w `next.config.ts`, a `/api/:path*` route handler `src/app/api/[...path]/route.ts` (cel: `API_INTERNAL_URL`, domyślnie `http://127.0.0.1:8001`). Handler nie ma 30-sekundowego limitu rewrite proxy (analiza LLM trwa po minuty) i toleruje żądania do 30 minut; ten sam origin nie wymaga CORS ani udostępniania nagłówków `X-*`.
 
 Klient: `src/lib/api/index.ts`. Metody: `health`, `ready`, `formats`, `analyze`, `analyzeBatch`, `validate`. Hooki TanStack Query: `useHealth`, `useReady`, `useFormats`, `useAnalyze`, `useValidate`. Token: `tokenStore.get()/set()`, klucz `formgen.token` w localStorage, nagłówek `Authorization: Bearer`. Nie zapisuj prawdziwych tokenów w repo.
 
