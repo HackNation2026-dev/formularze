@@ -204,6 +204,8 @@ export const batchSchema = z.object({
         filename: z.string().nullable(),
         status: z.literal(200),
         form: formDefinitionSchema,
+        partial: z.boolean().optional(),
+        partial_reasons: z.array(z.string()).optional(),
       }),
       z.object({
         filename: z.string().nullable(),

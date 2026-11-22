@@ -103,7 +103,7 @@ export class ApiClient {
         extractor: headers.get('X-Extractor'),
         partialResult: headers.get('X-Partial-Result') === 'true',
         partialReasons: (headers.get('X-Partial-Reasons') ?? '')
-          .split(',')
+          .split(/[,;]\s*/)
           .map((reason) => reason.trim())
           .filter(Boolean),
       },

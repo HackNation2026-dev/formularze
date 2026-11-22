@@ -27,6 +27,7 @@ export function createBatchStore(deps: BatchDeps = api) {
     rows = rows.map((row) => (row.id === id ? { ...row, ...change } : row));
     emit();
   };
+  let running = false;
   const store = {
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -60,39 +61,54 @@ export function createBatchStore(deps: BatchDeps = api) {
       emit();
     },
     async run(): Promise<void> {
+      if (running) return;
       const pending = rows.filter((row) => row.status === 'pending');
       if (!pending.length) return;
-      const response: BatchResult = await deps.analyzeBatch(
-        pending.map((row) => row.file),
-      );
-      response.results.forEach((result, index) => {
-        const row = pending[index];
-        if (!row) return;
-        if ('form' in result) {
-          const stored = putResult({
-            id: crypto.randomUUID(),
-            form: result.form,
-            meta: {
-              processingTimeMs: result.processing_time_ms,
-              detectedType: result.detected_type,
-              warnings: result.warnings,
-              extractor: result.extractor,
-              partialResult: false,
-              partialReasons: [],
-            },
-          });
-          update(row.id, { status: 'done', resultId: stored.id });
-        } else {
-          update(row.id, {
-            status: 'error',
-            error: {
-              code: result.error.code,
-              status: result.status,
-              message: result.error.message,
-            },
-          });
-        }
-      });
+      running = true;
+      try {
+        const response: BatchResult = await deps.analyzeBatch(
+          pending.map((row) => row.file),
+        );
+        response.results.forEach((result, index) => {
+          const row = pending[index];
+          if (!row) return;
+          if ('form' in result) {
+            const stored = putResult({
+              id: crypto.randomUUID(),
+              form: result.form,
+              meta: {
+                processingTimeMs: result.processing_time_ms,
+                detectedType: result.detected_type,
+                warnings: result.warnings,
+                extractor: result.extractor,
+                partialResult: result.partial ?? false,
+                partialReasons: result.partial_reasons ?? [],
+              },
+            });
+            update(row.id, { status: 'done', resultId: stored.id });
+          } else {
+            update(row.id, {
+              status: 'error',
+              error: {
+                code: result.error.code,
+                status: result.status,
+                message: result.error.message,
+              },
+            });
+          }
+        });
+      } catch (cause) {
+        const error =
+          cause instanceof ApiError
+            ? { code: cause.code, status: cause.status, message: cause.message }
+            : { code: 'NETWORK_ERROR', status: 0, message: String(cause) };
+        rows = rows.map((row) =>
+          row.status === 'pending' ? { ...row, status: 'error', error } : row,
+        );
+        emit();
+      } finally {
+        running = false;
+      }
     },
     async retryOne(id: string): Promise<void> {
       const row = rows.find((item) => item.id === id);

@@ -66,6 +66,62 @@ describe('magazyn wsadu', () => {
     expect(analyzeBatch).not.toHaveBeenCalled();
   });
 
+  it('odrzucenie żądania ustawia wszystkie wiersze na błąd zamiast cichej śmierci', async () => {
+    const store = create();
+    store.addFiles([file('a.pdf'), file('b.pdf')]);
+    analyzeBatch.mockRejectedValueOnce(
+      Object.assign(new Error('API niedostępne'), {
+        name: 'ApiError',
+        code: 'NETWORK_ERROR',
+        status: 0,
+      }),
+    );
+    await store.run();
+    expect(store.getSnapshot()).toMatchObject([
+      { status: 'error', error: { code: 'NETWORK_ERROR', status: 0 } },
+      { status: 'error', error: { code: 'NETWORK_ERROR', status: 0 } },
+    ]);
+  });
+
+  it('wysyłka w toku blokuje podwójne żądanie', async () => {
+    const store = create();
+    store.addFiles([file('a.pdf')]);
+    let release!: (value: unknown) => void;
+    analyzeBatch.mockReturnValueOnce(
+      new Promise((done) => {
+        release = done;
+      }),
+    );
+    const first = store.run();
+    await store.run();
+    expect(analyzeBatch).toHaveBeenCalledTimes(1);
+    release({ results: [ok('a.pdf')], ok: 1, failed: 0 });
+    await first;
+    expect(store.getSnapshot()[0]).toMatchObject({ status: 'done' });
+  });
+
+  it('wynik wsadu z fallbackiem niesie partialResult i partialReasons', async () => {
+    const store = create();
+    store.addFiles([file('a.pdf')]);
+    const degraded = {
+      ...ok('a.pdf'),
+      partial: true,
+      partial_reasons: ['extractor-fallback:LlmUnavailable'],
+      extractor: 'HeuristicExtractor',
+    };
+    analyzeBatch.mockResolvedValueOnce({
+      results: [degraded],
+      ok: 1,
+      failed: 0,
+    });
+    await store.run();
+    const resultId = store.getSnapshot()[0].resultId!;
+    expect(getResult(resultId)?.meta).toMatchObject({
+      partialResult: true,
+      partialReasons: ['extractor-fallback:LlmUnavailable'],
+    });
+  });
+
   it('retryOne wysyła pojedynczy plik przez /analyze', async () => {
     const store = create();
     store.addFiles([file('bad.txt')]);
