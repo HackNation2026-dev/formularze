@@ -24,9 +24,7 @@ export function connectPdf({ onFile, onBusy, status }) {
     $("pdf-prev").disabled = pdfPage === 1;
     $("pdf-next").disabled = pdfPage === pdfDocument.numPages;
   }
-  $("pdf-file").addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  async function open(file) {
     onBusy(true);
     try {
       if (file.size > 25 * 1024 * 1024)
@@ -50,6 +48,20 @@ export function connectPdf({ onFile, onBusy, status }) {
     } finally {
       onBusy(false);
     }
+  }
+  async function clear(message) {
+    await pdfDocument?.destroy();
+    pdfDocument = null;
+    onFile(null);
+    $("pdf-name").textContent = message;
+    $("pdf-position").textContent = "";
+    $("pdf-text").textContent = "";
+    $("pdf-canvas").hidden = true;
+    $("pdf-prev").disabled = true;
+    $("pdf-next").disabled = true;
+  }
+  $("pdf-file").addEventListener("change", (event) => {
+    if (event.target.files[0]) open(event.target.files[0]);
   });
   for (const [id, change] of [
     ["pdf-prev", -1],
@@ -63,4 +75,5 @@ export function connectPdf({ onFile, onBusy, status }) {
         status(`Błąd PDF: ${e.message}`);
       }
     });
+  return { open, clear };
 }
