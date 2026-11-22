@@ -2,6 +2,7 @@
 
 ## Niewydane
 
+- Przykładowa prezentacja (10 slajdów, 1280x720): PDF `docs/06-prezentacja/prezentacja-szkic-2026-11-22.pdf`, źródło FigCraft `docs/06-prezentacja/figcraft/szkice-prezentacji.figcraft` (strona „E - Finalny"; obok szkicowe talie A–D). Struktura przyjęta z zespołu 22.11: otwarcie „Od papieru do e-usługi", trudny przypadek (08), architektura i determinizm, jak do tego doszliśmy, ewaluacja, `/review/`, kontrakt COI, wdrożenie i koszt, żywe demo, zespół. Ustalenia, zweryfikowane liczby z źródłami i otwarte pozycje („~25 min" formularza 08 do przeliczenia, zdjęcia zespołu, zrzut `/review/`): `docs/06-prezentacja/KONTEKST-PREZENTACJI.md`. Warianty narracji: `docs/06-prezentacja/scenariusze-prezentacji.md`.
 - Aplikacja GUI `apps/web/` (ADR-002): Next.js 16, React 19, TypeScript, TanStack Query/Table/Form, next-intl PL/EN, Tailwind v4 z tokenami, atomic design system z katalogiem `/design-system`, wszystkie podstawowe widoki (logowanie, upload z kolejką, wynik JSON, walidacja, podgląd e-usługi ze stanami JSONata, otwórz JSON, ustawienia, stany błędów), mock API (MSW), 324 testy jednostkowe i 28 e2e, workflow CI `web.yml`. Spec i plan w `docs/superpowers/`, lista zadań na kolejny etap w `docs/08-implementacja/GUI-DO-ZROBIENIA.md`.
 - Walidatory PL (`schema/validators.py`) i `sample_values` w `POST /api/v1/forms/validate` (#3).
 - Propozycja 3 nowych słowników: dyscypliny sportowe, rasy psów, podatki i opłaty lokalne (#4); wynik formularza 09 z pełną listą dyscyplin (#5).
