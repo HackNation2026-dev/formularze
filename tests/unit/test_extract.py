@@ -414,6 +414,44 @@ def test_section_prompt_has_cacheable_prefix():
     assert i > len(a) - 60, "chunk-specific content must sit at the very end of the prompt"
 
 
+def test_llm_calls_run_concurrently_up_to_llm_parallel_and_keep_document_order():
+    import threading
+    import time
+
+    from formgen.config import Settings
+    from formgen.extract.extractor import CHUNK_CHARS, LlmExtractor
+    from formgen.ingest.model import Document, Line, Page
+
+    class FakeClient:
+        def __init__(self):
+            self.lock = threading.Lock()
+            self.in_flight = self.peak = 0
+
+        def complete(self, system, user, out, max_tokens=2048):
+            with self.lock:
+                self.in_flight += 1
+                self.peak = max(self.peak, self.in_flight)
+            time.sleep(0.2 if "PIERWSZA" in user else 0.05)  # the first chunk answers last
+            with self.lock:
+                self.in_flight -= 1
+            if out is LlmGlobal:
+                return LlmGlobal(title="Wniosek testowy")
+            label = "Pole pierwsze" if "PIERWSZA" in user else "Pole drugie"
+            return LlmChunk(sections=[LlmSection(page_title="P", title=label, fields=[LlmField(label=label)])])
+
+    filler = [Line("x" * 100, top=i) for i in range(CHUNK_CHARS // 100)]
+    doc = Document(
+        pages=[
+            Page(number=1, lines=[Line("PIERWSZA Pole pierwsze ____", top=0), *filler]),
+            Page(number=2, lines=[Line("DRUGA Pole drugie ____", top=0), *filler]),
+        ]
+    )
+    client = FakeClient()
+    spec = LlmExtractor(client).extract_document(doc, "x.pdf", Settings(_env_file=None, llm_parallel=2))
+    assert client.peak == 2
+    assert [s.title for s in spec.pages[0].sections] == ["Pole pierwsze", "Pole drugie"]
+
+
 def test_warm_up_prefills_both_instruction_prefixes_and_ignores_the_cut_answer():
     from formgen.extract.extractor import warm_up
     from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER

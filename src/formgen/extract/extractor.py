@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import BaseModel
 from rapidfuzz import fuzz
@@ -89,10 +90,15 @@ class LlmExtractor:
         client = self.client or make_client(settings)
         self.partial_reasons = []
         full = doc.to_prompt_text()
-        g = self._complete(client, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, 512)
-        sections: list[LlmSection] = []
-        for pages, text in chunks(doc):
-            sections.extend(self._sections_for(client, pages, text, settings.llm_context_tokens))
+        with ThreadPoolExecutor(max_workers=max(1, settings.llm_parallel)) as pool:
+            g_future = pool.submit(
+                self._complete, client, GLOBAL_USER.format(text=full[: CHUNK_CHARS * 2]), LlmGlobal, 512
+            )
+            per_chunk = list(
+                pool.map(lambda c: self._sections_for(client, c[0], c[1], settings.llm_context_tokens), chunks(doc))
+            )
+            g = g_future.result()
+        sections = [s for part in per_chunk for s in part]
         spec = to_spec(g, sections, full, with_validators=settings.with_validators)
         if not spec.title.strip():
             spec.title = filename.rsplit(".", 1)[0]
