@@ -12,7 +12,7 @@ from docx.oxml.ns import qn
 from docx.table import Table as DocxTable
 from docx.text.paragraph import Paragraph
 
-from formgen.ingest.model import Document, Line, Page, Table
+from formgen.ingest.model import ENUM_RE, FILL_RE, Document, Line, Page, Table
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 WP = "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
@@ -160,9 +160,32 @@ def parse_xlsx(data: bytes) -> Document:
                 )
             )
             y += 12
+        _mark_choice_rows(page.lines)
         if page.lines:
             pages.append(page)
     return Document(pages=pages or [Page(number=1)], source_kind="xlsx")
+
+
+def _mark_choice_rows(lines: list[Line]) -> None:
+    """Sheet cells cannot hold the box glyphs a PDF has, so the option rows of a choice list arrive as plain text.
+    Rows under a 'prompt:' row become ☐ options when there are at least two of them and each one finishes the
+    prompt's sentence ('zaświadczenia o:' -> 'okresie posiadania ...'): one cell, lower-case start, short, not a
+    heading. A row with a fill ('inne ……') closes the list, as it does on paper."""
+    for i, prompt in enumerate(lines):
+        if not prompt.text.rstrip(" *").endswith(":"):
+            continue
+        opts: list[Line] = []
+        for ln in lines[i + 1 :]:
+            t = ln.text.strip()
+            if ln.is_heading or not t[:1].islower() or ENUM_RE.match(t) or "|" in t or len(t) > 120 or t.endswith(":"):
+                break
+            opts.append(ln)
+            if FILL_RE.search(t):
+                break
+        if len(opts) >= 2 and not FILL_RE.search(opts[0].text):
+            for ln in opts:
+                ln.text = "☐ " + ln.text
+                ln.checkboxes += 1
 
 
 # ---------------------------------------------------------------- ODS
