@@ -34,6 +34,7 @@ services:
     command: >
       --model /models/${LLM_GGUF:-Qwen3.5-4B-Q4_K_M.gguf}
       --host 0.0.0.0 --port 8080 --ctx-size 16384 --jinja --reasoning-budget 0
+      --spec-type ngram-simple --cache-reuse 256
       --threads ${LLM_THREADS:-8} --temp 0 --no-webui
       -b 256 -ub 256 --checkpoint-min-step 256
     volumes:
