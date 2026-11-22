@@ -1,3 +1,7 @@
+import JsonViewer from './JsonViewer';
+import ValidationList from './ValidationList';
+import FormRenderer from './FormRenderer';
+import ResultLayout from './ResultLayout';
 import Button from './Button';
 import IconButton from './IconButton';
 import Icon from './Icon';
@@ -30,6 +34,10 @@ import FileRow from './FileRow';
 import ValidationItem from './ValidationItem';
 import Callout from './Callout';
 export const catalogue = [
+  { name: 'JsonViewer', layer: 'organisms', Component: JsonViewer },
+  { name: 'ValidationList', layer: 'organisms', Component: ValidationList },
+  { name: 'FormRenderer', layer: 'organisms', Component: FormRenderer },
+  { name: 'ResultLayout', layer: 'templates', Component: ResultLayout },
   { name: 'Button', layer: 'atoms', Component: Button },
   { name: 'IconButton', layer: 'atoms', Component: IconButton },
   { name: 'Icon', layer: 'atoms', Component: Icon },

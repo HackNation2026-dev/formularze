@@ -1,4 +1,9 @@
-import { Placeholder } from '../../../placeholder';
-export default function Page() {
-  return <Placeholder name="json" />;
+import { ResultView } from '@/design-system/templates/ResultLayout/ResultView';
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <ResultView id={id} mode="json" />;
 }

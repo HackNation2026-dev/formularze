@@ -27,6 +27,7 @@ class DesignSystemPage {
 test('katalog PL/EN, oba motywy, telefon i tablet bez błędów konsoli', async ({
   page,
 }) => {
+  test.setTimeout(90_000); // Macierz ośmiu wariantów obejmuje też organizmy i szablony.
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
