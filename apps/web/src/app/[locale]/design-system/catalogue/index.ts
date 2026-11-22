@@ -1,3 +1,15 @@
+import AppBar from './AppBar';
+import BottomNav from './BottomNav';
+import SideRail from './SideRail';
+import Dropzone from './Dropzone';
+import FileQueue from './FileQueue';
+import BottomSheet from './BottomSheet';
+import SidePanel from './SidePanel';
+import SettingsPanel from './SettingsPanel';
+import LoginForm from './LoginForm';
+import AppShell from './AppShell';
+import AuthLayout from './AuthLayout';
+import MasterDetail from './MasterDetail';
 import Button from './Button';
 import IconButton from './IconButton';
 import Icon from './Icon';
@@ -30,6 +42,18 @@ import FileRow from './FileRow';
 import ValidationItem from './ValidationItem';
 import Callout from './Callout';
 export const catalogue = [
+  { name: 'AppBar', layer: 'organisms', Component: AppBar },
+  { name: 'BottomNav', layer: 'organisms', Component: BottomNav },
+  { name: 'SideRail', layer: 'organisms', Component: SideRail },
+  { name: 'Dropzone', layer: 'organisms', Component: Dropzone },
+  { name: 'FileQueue', layer: 'organisms', Component: FileQueue },
+  { name: 'BottomSheet', layer: 'organisms', Component: BottomSheet },
+  { name: 'SidePanel', layer: 'organisms', Component: SidePanel },
+  { name: 'SettingsPanel', layer: 'organisms', Component: SettingsPanel },
+  { name: 'LoginForm', layer: 'organisms', Component: LoginForm },
+  { name: 'AppShell', layer: 'templates', Component: AppShell },
+  { name: 'AuthLayout', layer: 'templates', Component: AuthLayout },
+  { name: 'MasterDetail', layer: 'templates', Component: MasterDetail },
   { name: 'Button', layer: 'atoms', Component: Button },
   { name: 'IconButton', layer: 'atoms', Component: IconButton },
   { name: 'Icon', layer: 'atoms', Component: Icon },

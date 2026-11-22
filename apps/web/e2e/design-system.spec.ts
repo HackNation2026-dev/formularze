@@ -89,6 +89,8 @@ class DesignSystemPage {
 test('katalog PL/EN, oba motywy, telefon i tablet bez błędów konsoli', async ({
   page,
 }) => {
+  // Osiem pełnych wariantów katalogu zawiera także organizmy i szablony.
+  test.setTimeout(90_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
