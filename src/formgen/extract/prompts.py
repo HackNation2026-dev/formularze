@@ -13,7 +13,6 @@ Ustal:
    - applicant_self=true zawsze, gdy osoba fizyczna może wnioskować we własnym imieniu.
    - applicant_other_person=true, gdy formularz przewiduje pełnomocnika osoby fizycznej lub działanie w imieniu innej osoby.
    - applicant_legal_entity=true, gdy formularz zawiera dane firmy, instytucji, NIP, REGON, KRS, nazwę podmiotu, reprezentanta.
-5. reasoning: jedno zdanie uzasadnienia.
 
 TEKST FORMULARZA:
 {text}"""
