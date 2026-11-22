@@ -1,6 +1,6 @@
 ---
 wersja: 0.5.0
-aktualizacja: 2026-11-22 08:20
+aktualizacja: 2026-11-22 08:45
 status: stan na ostatnie godziny przed zgłoszeniem
 ---
 
@@ -43,9 +43,9 @@ Zgłoszenie formalne:
 
 | Element | Stan |
 |---|---|
-| Tytuł i opis projektu | CZĘŚCIOWO – README ma opis, brak sekcji „Zgłoszenie” z tytułem i linkami |
+| Tytuł i opis projektu | JEST – README sekcja „Zgłoszenie” (PR #53) |
 | Prezentacja PDF (max 10 slajdów) | **BRAK** – jest tylko treść w `docs/06-prezentacja/SLAJDY-I-FILM.md` |
-| Wynikowe JSON-y 01–09 | **PRZESTARZAŁE** – `data/output/` z 21.11 21:43, kod od tego czasu zmienił ingest XLSX/ODS, budżet tokenów, nagłówki częściowego wyniku |
+| Wynikowe JSON-y 01–09 | JEST (22.11 09:00) – `data/output/` z kodu `d3f0b65`, GPU, bez fallbacku, 0 błędów reguł, audyt treści czysty (PR #58) |
 | Film (max 3 min) w repo | **BRAK** – scenariusz z minutażem jest w `SLAJDY-I-FILM.md` |
 | Repozytorium publiczne | JEST |
 
@@ -65,7 +65,7 @@ Zgłoszenie formalne:
 
 Kolejność na Legionie jest szeregowa, bo CPU i GPU dzielą 12 GB RAM: najpierw wsad przez GPU, potem `verify_stack.sh`.
 
-### Sesja A – wyniki do oddania (krytyczna, ~25 min)
+### Sesja A – wyniki do oddania (ZROBIONE 09:00, PR #58; po drodze fix #57: warunek na brakującą opcję)
 
 1. `git worktree add ../formularze-wyniki develop`, `python3 scripts/sync_materials.py`.
 2. `LLM_BASE_URL=<tunel> LLM_API_KEY=<klucz z Legiona ~/ocr-bench/llm_api_key.txt> LLM_FALLBACK_HEURISTIC=false python scripts/batch.py --goldens --jobs 2`.
@@ -84,7 +84,7 @@ Kolejność na Legionie jest szeregowa, bo CPU i GPU dzielą 12 GB RAM: najpierw
 2. Człowiek: nagranie według tabeli minutażu w `SLAJDY-I-FILM.md` (upload, JSON, wizualizacja, zależna sekcja, słownik i walidacja, drugi format, `verify_stack.sh`).
 3. Plik mp4 do repo (albo link), sekcja „Zgłoszenie” w README: tytuł, opis, link do filmu, PDF, JSON-y.
 
-### Sesja D – release (po A, ~30 min na Legionie)
+### Sesja D – release (ZROBIONE: verify_stack 15/15 na develop d3f0b65, analyze CPU 85 s)
 
 1. Merge #48, #49, #50 do `develop`.
 2. Na Legionie: `git pull`, `docker compose build`, `scripts/verify_stack.sh` przy zatrzymanym wsadzie GPU.
