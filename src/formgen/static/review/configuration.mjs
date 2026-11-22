@@ -71,3 +71,73 @@ export async function digest(value) {
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
+
+// COI FieldType (src/formgen/schema/model.py). A retype keeps the kind, so
+// children stay inside a container and a leaf never gains a grid.
+export const CONTAINER_TYPES = ["SECTION", "REPEATING_SECTION"];
+const ELEMENT_TYPES = [
+  "TEXT_FIELD",
+  "TEXTAREA",
+  "NUMBER",
+  "CHECKBOX",
+  "RADIO",
+  "SELECT",
+  "DATEPICKER",
+  "FILE_UPLOADER",
+  "CONSENT_SECTION",
+  "TEXT_BLOCK",
+  "INFO_SECTION",
+];
+export function typeChoices(type) {
+  const choices = CONTAINER_TYPES.includes(type)
+    ? CONTAINER_TYPES
+    : ELEMENT_TYPES;
+  return choices.includes(type) ? choices : [type, ...choices];
+}
+
+// Applies one clerk edit in place and returns its log entries.
+// change is { delete: true } or holds only the changed title and/or type.
+export function editField(config, key, change) {
+  const [tab, ...path] = key.split(".").map(Number);
+  let list = config.tabs[tab].questions;
+  for (const i of path.slice(0, -1)) list = list[i].field.repeatingSectionGrid;
+  const index = path.at(-1),
+    question = list[index],
+    field = question.field;
+  if (change.delete) {
+    list.splice(index, 1);
+    // Close the row gap so the remaining grid stays 0..n-1.
+    for (const other of list)
+      if (other.y > question.y) {
+        if (other.field.questionOrder === other.y)
+          other.field.questionOrder -= question.rows ?? 1;
+        other.y -= question.rows ?? 1;
+      }
+    const removed = [];
+    (function collect(q) {
+      removed.push(q.field.techName);
+      (q.field.repeatingSectionGrid ?? []).forEach(collect);
+    })(question);
+    return [{ action: "delete", techName: field.techName, removed }];
+  }
+  const entries = [];
+  if ("title" in change) {
+    entries.push({
+      action: "rename",
+      techName: field.techName,
+      from: field.title,
+      to: change.title,
+    });
+    field.title = change.title;
+  }
+  if ("type" in change) {
+    entries.push({
+      action: "retype",
+      techName: field.techName,
+      from: field.type,
+      to: change.type,
+    });
+    field.type = change.type;
+  }
+  return entries;
+}

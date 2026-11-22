@@ -1,4 +1,4 @@
-import { fields } from "./configuration.mjs";
+import { fields, typeChoices, CONTAINER_TYPES } from "./configuration.mjs";
 // Source/model strings become text nodes only; imported HTML never enters the live DOM.
 export function text(value) {
   const doc = new DOMParser().parseFromString(String(value ?? ""), "text/html");
@@ -14,7 +14,7 @@ export function element(tag, content, className) {
   if (className) node.className = className;
   return node;
 }
-export function renderForm(config, answers, onAnswer, onNote) {
+export function renderForm(config, answers, onAnswer, onNote, onEdit) {
   const host = document.querySelector("#form");
   const nav = document.querySelector("#pages");
   host.replaceChildren();
@@ -24,7 +24,7 @@ export function renderForm(config, answers, onAnswer, onNote) {
   const fieldIndex = new Map(
     fields(config).map((entry) => [entry.field, entry]),
   );
-  function walk(questions, target) {
+  function walk(questions, target, inContainer = false) {
     const sorted = questions
       .map((q, i) => ({ q, i }))
       .sort(
@@ -204,12 +204,29 @@ export function renderForm(config, answers, onAnswer, onNote) {
       const note = element("button", "Dodaj uwagę", "annotation-button");
       note.setAttribute("aria-label", `Dodaj uwagę: ${title}`);
       note.addEventListener("click", () =>
-        onNote({ key, id: f.id, techName: f.techName, title }),
+        onNote({ id: f.id, techName: f.techName, title }, f),
       );
-      box.append(note);
-      views.set(key, { box, controls, stateInfo, error });
+      const edit = element("button", "Edytuj pole", "annotation-button");
+      edit.setAttribute("aria-label", `Edytuj pole: ${title}`);
+      edit.addEventListener("click", () => {
+        edit.hidden = true;
+        const form = editor(
+          f,
+          inContainer && questions.length === 1,
+          (change) => onEdit(key, change),
+          () => {
+            form.remove();
+            edit.hidden = false;
+            edit.focus();
+          },
+        );
+        edit.after(form);
+        form.querySelector("input").focus();
+      });
+      box.append(note, edit);
+      views.set(key, { box, controls, stateInfo, error, edit });
       target.append(box);
-      walk(f.repeatingSectionGrid ?? [], box);
+      walk(f.repeatingSectionGrid ?? [], box, CONTAINER_TYPES.includes(f.type));
     }
   }
   config.tabs.forEach((tab, i) => {
@@ -223,4 +240,39 @@ export function renderForm(config, answers, onAnswer, onNote) {
     host.append(section);
   });
   return views;
+}
+// A section keeps at least one field: its last field is removed with the section.
+function editor(f, lastInSection, onEdit, onCancel) {
+  const form = element("form", undefined, "field-editor");
+  const label = element("label", "Etykieta pola"),
+    name = element("input");
+  name.value = text(f.title);
+  label.append(name);
+  const typeLabel = element("label", "Typ pola"),
+    type = element("select");
+  for (const choice of typeChoices(f.type))
+    type.append(element("option", choice));
+  type.value = f.type;
+  typeLabel.append(type);
+  const save = element("button", "Zapisz zmiany"),
+    remove = element("button", "Usuń pole"),
+    cancel = element("button", "Anuluj");
+  remove.type = cancel.type = "button";
+  remove.disabled = lastInSection;
+  form.append(label, typeLabel, save, remove, cancel);
+  if (lastInSection)
+    form.append(
+      element("small", "Ostatnie pole sekcji: usuń całą sekcję.", "meta"),
+    );
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const change = {};
+    if (name.value.trim() !== text(f.title)) change.title = name.value.trim();
+    if (type.value !== f.type) change.type = type.value;
+    if (Object.keys(change).length) onEdit(change);
+    else onCancel();
+  });
+  remove.addEventListener("click", () => onEdit({ delete: true }));
+  cancel.addEventListener("click", onCancel);
+  return form;
 }

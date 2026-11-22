@@ -268,7 +268,23 @@ canvas {
 .annotation-button {
   padding: 4px 9px;
   font-size: 12px;
+  margin: 8px 8px 0 0;
+}
+.field-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
   margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed #9bafbc;
+  border-radius: 5px;
+}
+.field-editor label:first-child {
+  flex: 1 1 280px;
+}
+.field-editor small {
+  flex-basis: 100%;
 }
 .warning,
 .condition-error {
