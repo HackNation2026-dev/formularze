@@ -1,0 +1,14 @@
+{
+  "title": "Wsad plików",
+  "drop": "Upuść wiele plików tutaj",
+  "choose": "Wybierz pliki",
+  "limit": "Wiele plików jednym żądaniem (maks. {max}).",
+  "tooMany": "Pominięto {count} plików ponad limit.",
+  "analyze": "Analizuj wszystko",
+  "summary": "Gotowe: {done} z {total}",
+  "errorsSummary": "Błędy: {failed} — „Ponów” wysyła plik pojedynczo.",
+  "queue": "Pliki wsadu",
+  "empty": "Brak plików",
+  "emptyDescription": "Dodaj pliki, aby wysłać je jednym żądaniem do /analyze-batch.",
+  "open": "Otwórz wynik"
+}

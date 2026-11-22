@@ -115,7 +115,7 @@ export const handlers = [
       return failure(forced)!;
     const files = (await request.formData()).getAll('files');
     if (!files.length) return failure('MISSING_FILE')!;
-    if (files.length > 10 || forced === 'TOO_MANY_FILES')
+    if (files.length > 20 || forced === 'TOO_MANY_FILES')
       return failure('TOO_MANY_FILES')!;
     const results = files.map((file) => {
       const filename = typeof file === 'string' ? file : file.name;

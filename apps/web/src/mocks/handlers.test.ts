@@ -106,7 +106,7 @@ describe('scenariusze mocka', () => {
       code: 'MISSING_FILE',
     });
     await expect(
-      client.analyzeBatch(Array.from({ length: 11 }, () => file())),
+      client.analyzeBatch(Array.from({ length: 21 }, () => file())),
     ).rejects.toMatchObject({ code: 'TOO_MANY_FILES' });
   });
   it('brak pliku i pusty plik', async () => {

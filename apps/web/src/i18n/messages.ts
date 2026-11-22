@@ -1,4 +1,4 @@
-import plResults from '../../messages/pl/results.json';
+﻿import plResults from '../../messages/pl/results.json';
 import enResults from '../../messages/en/results.json';
 import plPreview from '../../messages/pl/preview.json';
 import enPreview from '../../messages/en/preview.json';
@@ -16,6 +16,8 @@ import plSettings from '../../messages/pl/settings.json';
 import enSettings from '../../messages/en/settings.json';
 import plOpen from '../../messages/pl/open.json';
 import enOpen from '../../messages/en/open.json';
+import plBatch from '../../messages/pl/batch.json';
+import enBatch from '../../messages/en/batch.json';
 
 export const messages = {
   pl: {
@@ -28,6 +30,7 @@ export const messages = {
     upload: plUpload,
     settings: plSettings,
     open: plOpen,
+    batch: plBatch,
   },
   en: {
     results: enResults,
@@ -39,6 +42,8 @@ export const messages = {
     upload: enUpload,
     settings: enSettings,
     open: enOpen,
+    batch: enBatch,
   },
 };
 export type Locale = keyof typeof messages;
+
