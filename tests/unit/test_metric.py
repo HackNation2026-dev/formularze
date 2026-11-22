@@ -30,3 +30,22 @@ def test_form_with_only_template_tabs_has_zero_subject_f1(path):
     assert r.f1_subject == 0.0
     assert r.f1 > 0.8, "overall F1 hides the missing subject fields; that is why the split exists"
     assert r.subject.tp + r.template.tp == r.tp and r.subject.fn + r.template.fn == r.fn
+
+
+@pytest.mark.parametrize("path", GOLDENS, ids=[p.stem for p in GOLDENS])
+def test_condition_logic_of_golden_against_itself_is_perfect(path):
+    g = _load(path)
+    r = compare(g, g)
+    assert r.show_total > 0 and r.show_logic == 1.0
+    assert r.subject.show_logic_ok + r.template.show_logic_ok == r.show_logic_ok
+
+
+@pytest.mark.parametrize("path", GOLDENS, ids=[p.stem for p in GOLDENS])
+def test_negated_condition_is_caught_by_logic_but_not_by_presence(path):
+    g = _load(path)
+    ours = _load(path)
+    target = next(f for _, f in ours.iter_fields() if f.states and not f.states[0].query.startswith("$not("))
+    target.states[0].query = f"$not({target.states[0].query})"
+    r = compare(ours, g)
+    assert r.show_recall == 1.0, "the SHOW state is still there"
+    assert r.show_logic_ok == r.show_total - 1
