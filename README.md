@@ -112,7 +112,7 @@ Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PR
 Druga warstwa interfejsu nad tym samym REST API ([ADR-002](docs/07-decyzje/ADR-002-gui-nextjs.md)): logowanie tokenem, kolejka analizy wielu plików, kolorowany JSON, walidacja, podgląd e-usługi ze stanami JSONata, import JSON z dysku, PL/EN. Działa z mockiem API albo z backendem z tego repo. Nie jest częścią obrazu Docker backendu. Szczegóły i trasy: [apps/web/README.md](apps/web/README.md).
 
 ```bash
-cd apps/web && npm ci && npm run dev     # http://localhost:3000/pl ; backend: NEXT_PUBLIC_API_MODE=api i NEXT_PUBLIC_API_BASE=http://localhost:8000 w .env.local
+cd apps/web && npm ci && npm run dev     # http://localhost:3000/pl ; backend: NEXT_PUBLIC_API_MODE=live i NEXT_PUBLIC_API_BASE=http://localhost:8000 w .env.local
 ```
 
 ## Konfiguracja
