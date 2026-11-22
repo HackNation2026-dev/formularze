@@ -412,3 +412,23 @@ def test_section_prompt_has_cacheable_prefix():
     while i < min(len(a), len(b)) and a[i] == b[i]:
         i += 1
     assert i > len(a) - 60, "chunk-specific content must sit at the very end of the prompt"
+
+
+def test_warm_up_prefills_both_instruction_prefixes_and_ignores_the_cut_answer():
+    from formgen.extract.extractor import warm_up
+    from formgen.extract.prompts import GLOBAL_USER, SECTIONS_USER
+
+    class FakeClient:
+        def __init__(self):
+            self.sent = []
+
+        def complete(self, system, user, out, max_tokens=2048):
+            self.sent.append((user, max_tokens))
+            raise ValueError("LLM returned invalid JSON: one token")
+
+    client = FakeClient()
+    warm_up(client)
+    assert [m for _, m in client.sent] == [1, 1]
+    # each warm prompt is a prefix of every real prompt of its kind, so the server can reuse its cache
+    assert GLOBAL_USER.format(text="## WNIOSEK").startswith(client.sent[0][0])
+    assert SECTIONS_USER.format(pages="strony 1-1", text="## WNIOSEK").startswith(client.sent[1][0])

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 
@@ -128,6 +129,17 @@ class LlmExtractor:
         if any(c.get("finish") == "length" for c in getattr(client, "calls", [])[before:]):
             self.partial_reasons.append(f"llm-truncated:{out.__name__}")
         return answer
+
+
+def warm_up(client: LlmClient) -> None:
+    """Prefill the document-independent instruction prefix of both prompts once, so llama-server's prompt cache
+    serves it to every later form and each form pays prefill only for its own text."""
+    for user, out in (
+        (GLOBAL_USER.format(text=""), LlmGlobal),
+        (SECTIONS_USER.format(pages="strony 1-1", text=""), LlmChunk),
+    ):
+        with contextlib.suppress(ValueError):  # a one-token answer never parses; only the prefill matters
+            client.complete(SYSTEM, user, out, max_tokens=1)
 
 
 def answer_budget(prompt: str, context_tokens: int) -> int:
