@@ -1,66 +1,39 @@
 ---
-wersja: 0.1.0
+wersja: 0.1.1
 aktualizacja: 2026-11-22
-status: przyjete ustalenia i material do dalszej obróbki
+status: ustalenia zespołu i zweryfikowane fakty do prezentacji
 ---
 
-# Kontekst prezentacji (rozmowa 22.11)
+# Kontekst prezentacji HackNation
 
-Ten dokument zamraza ustalenia z rozmowy o prezentacji, stan wiedzy, na którym stoja slajdy,
-oraz przykladowa prezentacje jako material do dalszej obróbki. Uzupelnia [SLAJDY-I-FILM](SLAJDY-I-FILM.md)
-i [scenariusze](scenariusze-prezentacji.md); po dalszych decyzjach aktualizuj ten plik.
+## Materiały
 
-## 1. Przykladowa prezentacja
+- Źródłem prezentacji jest strona **E - Finalny** w [pliku FigCraft](figcraft/szkice-prezentacji.figcraft). Strony A–D zawierają wcześniejsze warianty do wykorzystania podczas pracy.
+- [PDF konkursowy](prezentacja-szkic-2026-11-22.pdf) zawiera slajdy 01–10 w kolejności wystąpienia. Każda strona ma rozmiar 1280 × 720. Po zmianie źródła należy wyeksportować stronę E pod tą samą nazwą i sprawdzić polskie znaki w tekście PDF.
+- Materiały do wystąpienia uzupełniają [plan slajdów i filmu](SLAJDY-I-FILM.md) oraz [szkice scenariuszy](scenariusze-prezentacji.md).
 
-- 10 slajdów, 1280x720 (16:9), styl techniczny (jasne tlo, granat #1F3A5F, cienkie linie).
-- Zródlo edytowalne: `figcraft/szkice-prezentacji.figcraft`, strona **E - Finalny**. Na tej samej
-  stronie obok sa strony A–D (4 szkicowe talie: Rzetelnosc, Historia urzednika, Demo, Decydent)
-  do wyluskania elementów.
-- PDF przykladowy: `prezentacja-szkic-2026-11-22.pdf` (eksport stron w kolejności odczytu).
-- Eksport nowego PDF po edycji w FigCraft: `file.exportFramesPdf` dla strony E - Finalny
-  (narzedzia FigCraft) albo recznie z aplikacji.
+## Ustalenia zespołu
 
-## 2. Ustalenia (co zostalo przyjete)
+Jasne tło, granatowe nagłówki, cienkie linie i krój Inter. Kolorowe etykiety rozróżniają działające funkcje, wyniki pomiarów i rozszerzenia. Otwarcie „Od papieru do e-usługi — jednym wsadem” prowadzi do deklaracji o odpadach, architektury, prac nad rozwiązaniem, ewaluacji, przeglądu formularza, kontraktu COI, wdrożenia i żywego demo. Prezentację zamyka zespół. Na okładce i slajdzie zespołowym zarezerwowano miejsce na zdjęcia.
 
-| Ustalenie | Decyzja |
+## Pomiary użyte na slajdach
+
+Źródłem wyników jest [README, sekcja „Pomiary”](../../README.md#pomiary-stan-2211) na gałęzi develop. Wyjątek stanowi historyczna seria optymalizacji CPU, udokumentowana w [stanie projektu](../08-implementacja/STAN-PROJEKTU.md).
+
+| Zakres | Wynik i sposób odczytu |
 |---|---|
-| Scenariusz | wlasna struktura zespolu z porannej rozmowy, nie szablony A–D |
-| Styl | techniczny (wariant A: jasny, granat, minimalny), nie kremowy narracyjny ani ciemne demo |
-| Otwarcie (slajd 1) | wariant 2 „Od papieru do e-uslugi — jednym wsadem." z pilka formatów; 3 warianty otwarcia byly proponowane, wybrano ten |
-| Zywych demo na obronie | TAK — demo bedzie; UI w nowym GUI nie jest jeszcze zintegrowane, prezentacja sie tym nie przejmuje |
-| Struktura | 10 slajdów: powitanie, trudny przypadek, architektura, jak do tego doszlismy + uzupelnienie o ewaluacje, przeglad /review/, kontrakt COI, wdrozenie i koszt, demo/puenta; slajd 10 = zespol |
-| Slajd zespolu | 3 miejsca na zdjecia, pod kazdym opis osoby (imie, nazwisko, rola); reszta dowolna |
-| Chipy statusu | DZIALA (zielony), DODATKOWE (pomaranczowy), OGRANICZENIA (szary) — obowiazkowe oznaczenie na slajdach |
+| Wsad GPU z 22.11 | 9/9 formularzy z JSON-em, 0 błędów reguł COI. Przy przetwarzaniu 2 formularzy naraz czas wynosił do 5 min na formularz. To maksimum wsadu. Deklaracja 08 należała do najdłużej przetwarzanych. |
+| Formularz 05 na CPU | 207 s → 122 s w serii optymalizacji. Osobny test verify_stack na x86 bez GPU dał 85 s. |
+| Wzorce 01 / 05 | Composite 0,925 / 0,919 (na kafelku wartość przybliżona 0,92). Recall 0,96 / 0,93. F1 0,86 / 0,84. F1 samego przedmiotu wniosku 0,75 / 0,50. Kafelek recall pokazuje formularze w kolejności 05 / 01. |
+| Test smoke | SCORE po zaokrągleniu 0,75. Przebieg eval-warm z zapisanymi odpowiedziami modelu trwał ok. 20 s. |
+| Wdrożenie | 14/14 kontroli Docker i API na x86 bez GPU. Generacja modelu osiągnęła ok. 11 tok/s na CPU i ok. 59 tok/s na GPU. |
 
-## 3. Fakty na slajdach (zweryfikowane w repo 22.11, main `443d2d5`)
+Model Qwen3.5-4B odczytuje przedmiot wniosku. Kompilator dodaje stałe części formularza, a walidator sprawdza reguły COI. Sekcji powtarzalnych nie pokazujemy jako wyniku dla ocenianych formularzy. Na slajdzie demo czas analizy na CPU opisujemy jako możliwe ograniczenie. README odnotowuje dla deklaracji 08 pojedynczy pomiar na kodzie z dodatkową zmianą spoza main.
 
-| Fakt | Zródlo |
-|---|---|
-| 9/9 formularzy z JSON-em w `data/output/`, w tym 08_deklaracja_odpady; 0 bledów reguł | README „Pomiary (stan 22.11)", `STAN-PROJEKTU.md` na develop |
-| Czas na GPU: 29–300 s na formularz; 05 na CPU po optymalizacjach 207 s -> 122 s | README „Pomiary"; develop `926968d` |
-| Golden 05/01: composite 0,92/0,92, recall 0,95/0,96; SCORE smoke 0,7363; eval-warm ~10 s | README „Pomiary" |
-| verify_stack.sh 14/14 (x86, bez GPU) | README „Pomiary" |
-| Maszyna jury bez GPU; model w chmurze na wlasnej infrastrukturze dozwolony, zapas lokalny | README „Model w chmurze" |
-| 08 = deklaracja odpadów: 6 stron, uklad tabelaryczny, sekcje A, B.1, B.2, kratki, daty | `analiza-materialow.md` |
-| Determinizm: model tylko tresc wniosku, reszta kodem, walidator gwarantuje poprawny JSON, fallback heurystyczny | `PROBLEM.md` P7, README pipeline |
+**Usunięty punkt „~25 min” dla formularza 08 na CPU.** Na kodzie z main brak pomiaru potwierdzającego tę wartość. Nie używamy jej przy omawianiu wyników.
 
-## 4. Otwarte (przed zgloszeniem)
+## Przed zgłoszeniem
 
-1. **„~25 min" dla formularza 08 na CPU** — deklaracja zespolu, brak pomiaru w dokumentacji.
-   Na slajdzie 02 oznaczone „(pomiar zespolu)". PRZED zgloszeniem: przelicz 08 na CPU i wpisz
-   zmierzona liczbe (slajd 02, dokument i STAN-PROJEKTU).
-2. Zdjecia i imiona/role na slajd 10 — wymienic placeholdery w FigCraft.
-3. Zrzut ekranu `/review/` zamiast makiety na slajdzie 06 (stack z `DEMO-SETUP.md`).
-4. Film (max 3 min) — nadal BRAK; minutaż gotowy w [SLAJDY-I-FILM](SLAJDY-I-FILM.md).
-5. Termin zgloszenia wg `STAN-PROJEKTU.md` na develop: 22.11 okolo 10:00 — potwierdzic na Discordzie.
-
-## 5. Sugerujemy
-
-- Trzymac na slajdach TYLKO liczby z sekcji 3; kazda nowa liczba musi miec zródlo przed wejsciem na slajd.
-- Na obronie slajd 04 („jak doszlismy") prowadzi naturalnie do slajdu 09: opowiedziec penta pomiarów
-  jako zdyscyplinowana petle, to gra na „jakosc kodu" (20%).
-- Slajd 02 prowadzic uczciwie: najtrudniejszy przypadek zrobiony, czas jest ograniczeniem, optymalizacje
-  trwaja (207->122 s jako dowód trendu).
-- Nowe GUI pokazac na obronie jako „dalszy rozwoj", stan jury to `/review/` (zgodnie ze STAN-PROJEKTU na develop).
-- Po kazdej zmianie slajdów eksportowac PDF do tego katalogu z data w nazwie; nie usuwac starszych
-  wersji (historia materialu do obróbki).
+- Uzupełnić zarezerwowane miejsca rzeczywistymi zdjęciami, gdy zespół je wybierze.
+- Makietę przeglądu można zastąpić zrzutem z wersji GUI używanej podczas obrony. [Instrukcja uruchomienia](../08-implementacja/DEMO-SETUP.md).
+- Sprawdzić film i potwierdzić termin zgłoszenia u organizatora. Podczas pokazu zacząć od blankietu i sprawdzić wygenerowane pola na tym samym przykładzie.
