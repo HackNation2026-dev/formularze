@@ -1,4 +1,11 @@
-import { Placeholder } from './placeholder';
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from '@/i18n/navigation';
+
 export default function Home() {
-  return <Placeholder name="home" />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/upload');
+  }, [router]);
+  return null;
 }
