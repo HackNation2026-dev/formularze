@@ -248,12 +248,20 @@ def noise(u: Unit) -> dict:
     fields = subject_fields(u.form_def)
     vocab = sorted(set(re.findall(r"[^\W\d_]{4,}", u.source.lower())))
     ungrounded = [f.title for f in fields if not grounded(f.title, vocab)]
-    seen: set[str] = set()
+    # a label repeated inside one section is a duplicate; the same label in two sections is two real fields
+    # (form 08: the fee table for all owners and the one for exempted owners both have Liczba/Stawka/Wysokość)
+    seen: set[tuple[str, str, str]] = set()
     dups = 0
-    for f in fields:
-        k = f.title.strip().lower()
-        dups += k in seen
-        seen.add(k)
+    for tab in u.form_def.tabs:
+        if tab.title in TEMPLATE_TABS:
+            continue
+        for q in tab.questions:
+            for f in q.field.iter_fields():
+                if f.type in CONTAINER_TYPES:
+                    continue
+                k = (tab.title, q.field.title, f.title.strip().lower())
+                dups += k in seen
+                seen.add(k)
     viol = check_rules(u.form_def)
     findings = len(viol)
     rate = (len(ungrounded) + dups + findings) / max(1, len(fields))
