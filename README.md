@@ -10,6 +10,28 @@ Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja: `H
 
 Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 224 testów (`make test`) i 15 testów Playwright interfejsu `/review/`; osobna aplikacja GUI `apps/web` (Next.js) ma własne testy i CI `web.yml`. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
 
+## Jak to działa i co nas wyróżnia
+
+1. **Rozpoznanie pliku: Google Magika.** Typ pliku rozpoznaje model głęboki Magika (Apache-2.0, ONNX, lokalnie), nie rozszerzenie
+   ani `libmagic`. Zawartość musi zgadzać się z rozszerzeniem, inaczej API zwraca `415 MIME_MISMATCH`. Kod: `src/formgen/ingest/detect.py`.
+2. **Hybrydowy odczyt: warstwa tekstu + OCR na stronę.** PDF czytamy z warstwy tekstowej (`pdfplumber`). Strona, która ma mniej
+   niż 50 znaków tekstu, jest skanem: renderujemy ją (`pypdfium2`, 200 dpi) i przepuszczamy przez Tesseract (`pol`). PDF
+   częściowo zeskanowany ma więc tekst ze źródła tam, gdzie się da, i OCR tylko tam, gdzie trzeba. Długie obrazy dzielimy
+   na strony w pustych wierszach. Kod: `src/formgen/ingest/__init__.py`, `pdf_raster.py`, `image.py`.
+3. **Jeden model dokumentu dla 8 formatów.** PDF, DOC (Apache Tika), DOCX, XLSX, ODS, JPG, PNG trafiają do tej samej
+   struktury: linie, nagłówki, pola do wypełnienia `____`, kratki `☐`. W arkuszach puste komórki z kropkowaną lub kreskowaną dolną krawędzią stają się
+   polami `____`, a wiersze wyboru dostają `☐`. Kod: `src/formgen/ingest/`.
+4. **Lokalny LLM tylko do treści, z gramatyką JSON.** Qwen3.5-4B (Apache-2.0) w llama.cpp wyodrębnia wyłącznie przedmiot
+   wniosku. Serwer wymusza odpowiedź zgodną ze schematem JSON (gramatyka), więc model nie może zwrócić niepoprawnej struktury.
+   Kod: `src/formgen/extract/`.
+5. **Kod robi resztę, deterministycznie.** Strona „Dane”, adresy, pełnomocnictwo, kontakt, zgody, strona końcowa, słowniki COI,
+   warunki JSONata i walidatory buduje kompilator szablonów. Walidator reguł COI sprawdza każdy wynik przed zwrotem.
+   Kod: `src/formgen/compose/`, `src/formgen/schema/`.
+6. **Zawsze jest wynik.** Awaria zdalnego modelu: lokalny llama.cpp na CPU. Awaria modelu w ogóle: ekstraktor heurystyczny.
+   Nagłówki `X-Extractor` i `X-Partial-Result` mówią, która ścieżka zadziałała i co pominięto.
+
+Wszystko działa offline: zero zewnętrznych API w runtime, licencje bez copyleft ([LICENSES](docs/08-implementacja/LICENSES.md)).
+
 ## Zacznij tutaj
 
 1. [Indeks dokumentacji](docs/README.md)
