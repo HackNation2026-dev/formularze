@@ -7,7 +7,7 @@ import re
 
 from rapidfuzz import fuzz
 
-from formgen.compose.dictionaries import dictionary_for, with_proposed
+from formgen.compose.dictionaries import dictionary_for, proposed_for, with_proposed
 from formgen.compose.spec import ApplicantKinds, Condition, FieldSpec, FormSpec, PageSpec, SectionSpec
 from formgen.config import Settings
 from formgen.extract.llm_client import LlmClient, make_client
@@ -73,6 +73,8 @@ APPLICANT_SECTION_RE = re.compile(
     r"wnioskodawc|dane osobowe|dane identyfikacyjne|zamieszkania|siedzib|korespondenc|pełnomocni|reprezentant|podmiot|składając|kontakt",
     re.I,
 )
+# a section about the property itself ("Dane wnioskodawcy i adres nieruchomości") keeps its address fields
+SUBJECT_SECTION_RE = re.compile(r"nieruchomoś|budyn|lokaliz|działk|obręb|posesj", re.I)
 
 
 class LlmExtractor:
@@ -139,6 +141,9 @@ def chunks(doc: Document) -> list[tuple[str, str, Lines]]:
     return [(f"strony {g[0]}-{g[-1]}", doc.to_prompt_text(g, numbered=True), doc.numbered_lines(g)) for g in groups]
 
 
+FILL_MARK_RE = re.compile(r"____|☐")
+CAPTION_RE = re.compile(r"^\s*\([^()]*\)[\s\d)*]*$")
+ADDRESS_VALUE_RE = re.compile(r"\b\d{2}-\d{3}\b|\bul\. \w+ \d", re.I)
 ENUM_PREFIX_RE = re.compile(
     r"^(\d{1,2}(\.\d{1,2})*[\)\.]|[A-Z](\.\d{1,2})+[\)\.]?|[A-Z]\d{1,2}[\)\.]?|[a-zA-Z][\)\.]|[IVX]{1,4}\.)(\s+|$)"
 )
@@ -169,7 +174,11 @@ def is_template_label(label: str, section_title: str = "") -> bool:
     low = label.lower()
     if any(k in low for k in IDENTITY_LABELS):
         return True
-    return any(k in low for k in ADDRESS_LABELS) and bool(APPLICANT_SECTION_RE.search(section_title))
+    return (
+        any(k in low for k in ADDRESS_LABELS)
+        and bool(APPLICANT_SECTION_RE.search(section_title))
+        and not SUBJECT_SECTION_RE.search(section_title)
+    )
 
 
 def to_spec(
@@ -200,11 +209,23 @@ def to_spec(
             if not re.search(r"[^\W_]{2,}", clean(lines[f.line])) or not re.search(r"[^\W_]{2,}", label):
                 dropped.append(f"empty-line:{f.line}")  # no real word: '', '____', '...', '-'
                 continue
+            if ADDRESS_VALUE_RE.search(lines[f.line]):
+                dropped.append(f"address-value:{f.line}")  # a printed address (the office's) is data, not a field
+                continue
             if is_template_label(label, s.title) and f.kind not in ("FILE_UPLOADER",):
                 dropped.append(f"template:{label}")
                 continue
             options = [o for n in f.option_lines if n in lines and (o := clean(lines[n]))]
             kind = FieldType(f.kind)
+            description = f.description.strip()
+            if kind == FieldType.TEXT_BLOCK:
+                if any(FILL_MARK_RE.search(lines.get(n, "")) for n in (f.line, *f.option_lines)):
+                    kind = FieldType.RADIO if options else FieldType.TEXT_FIELD  # something to fill is no block
+                elif CAPTION_RE.match(lines[f.line]):
+                    dropped.append(f"caption-block:{f.line}")  # '(adres)' names the fill line above it
+                    continue
+                else:
+                    description = description or clean(lines[f.line])  # a block shows only its description
             yes_no = {o.lower() for o in options} <= {"tak", "nie", "yes", "no"}
             if kind in (FieldType.RADIO, FieldType.CHECKBOX) and ATTACHMENT_RE.search(label) and options and not yes_no:
                 fields.extend(FieldSpec(label=o, kind=FieldType.FILE_UPLOADER, required=False) for o in options)
@@ -220,20 +241,27 @@ def to_spec(
             )
             if dictionary:  # predefined dictionaries attach only to a drop-down list
                 kind = FieldType.SELECT
-            fields.append(
-                with_proposed(
-                    FieldSpec(
-                        label=label,
-                        kind=kind,
-                        options=options,
-                        required=f.required,
-                        validators=validators,
-                        description=f.description.strip(),
-                        visible_when=_cond(f.visible_when, labels, lines),
-                        dictionary=dictionary,
-                    )
+            spec = with_proposed(
+                FieldSpec(
+                    label=label,
+                    kind=kind,
+                    options=options,
+                    required=f.required,
+                    validators=validators,
+                    description=description,
+                    visible_when=_cond(f.visible_when, labels, lines),
+                    dictionary=dictionary,
                 )
             )
+            proposed = proposed_for(label)
+            if (
+                proposed
+                and spec.options == list(proposed.values)
+                and any(x.options == spec.options and x.visible_when == spec.visible_when for x in fields)
+            ):
+                dropped.append(f"duplicate-dictionary:{label}")  # one list the model pointed at from several lines
+                continue
+            fields.append(spec)
         if not fields:
             continue
         page_title = s.page_title.strip() or "Przedmiot wniosku"

@@ -209,6 +209,10 @@ def test_address_labels_kept_in_subject_sections_but_dropped_for_applicant():
     assert not is_template_label("Miejscowość", "Lokalizacja budynku")
     assert is_template_label("Miejscowość", "Dane wnioskodawcy")
     assert is_template_label("Numer PESEL", "Lokalizacja budynku")
+    # 01 pdf: the model merged the applicant and the building location into one section
+    assert not is_template_label("Miejscowość", "Dane wnioskodawcy i adres nieruchomości")
+    assert not is_template_label("Ulica", "Dane wnioskodawcy i adres nieruchomości")
+    assert is_template_label("Imię i nazwisko", "Dane wnioskodawcy i adres nieruchomości")
 
 
 def test_attachment_radio_becomes_file_uploaders_and_sections_merge():
@@ -440,3 +444,89 @@ def test_section_prompt_has_cacheable_prefix():
     while i < min(len(a), len(b)) and a[i] == b[i]:
         i += 1
     assert i > len(a) - 60, "chunk-specific content must sit at the very end of the prompt"
+
+
+def test_text_block_on_a_fill_line_becomes_an_input_and_a_real_block_keeps_its_text():
+    # 01 pdf: the model marked every location field TEXT_BLOCK; a field with '____' or '☐' is never a block
+    lines = {
+        1: "w miejscowości ____ przy ulicy ____",
+        2: "Wnoszę o ustalenie numeru porządkowego budynkowi",
+        3: "Rodzaj budynku:",
+        4: "☐ mieszkalny",
+        5: "☐ gospodarczy",
+        6: "(podpis wnioskodawcy) 2)",
+    }
+    secs = chunk(
+        lines,
+        LlmSection(
+            page_title="P",
+            title="Lokalizacja budynku",
+            fields=[
+                LlmField(line=1, label="Miejscowość", kind="TEXT_BLOCK"),
+                LlmField(line=2, kind="TEXT_BLOCK"),
+                LlmField(line=3, kind="TEXT_BLOCK", option_lines=[4, 5]),
+                LlmField(line=6, label="Obręb", kind="TEXT_BLOCK"),  # a caption under a fill line -> dropped
+            ],
+        ),
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
+    fields = spec.pages[0].sections[0].fields
+    assert [(f.label, f.kind) for f in fields] == [
+        ("Miejscowość", "SELECT"),  # TEXT_FIELD, then the Miejscowość dictionary
+        ("Wnoszę o ustalenie numeru porządkowego budynkowi", "TEXT_BLOCK"),
+        ("Rodzaj budynku", "RADIO"),  # its option lines have boxes
+    ]
+    assert fields[1].description == "Wnoszę o ustalenie numeru porządkowego budynkowi"
+
+
+def test_second_field_with_the_same_proposed_dictionary_and_visibility_in_a_section_is_dropped():
+    # 05 pdf: the tax list attached to three lines, each label naming "podatku"; the conditional one stays
+    lines = {
+        1: "wnoszę o stwierdzenie nadpłaty z tytułu ____",
+        2: "(rodzaj podatku)",
+        3: "Miejscowość ____",
+        4: "Miejscowość urodzenia ____",
+        5: "Kwotę nadpłaty proszę:",
+        6: "☐ 1) zaliczyć na poczet zobowiązania z tytułu ____",
+        7: "☐ 2) zwrócić przelewem na wskazany rachunek",
+    }
+    secs = chunk(
+        lines,
+        LlmSection(
+            page_title="P",
+            title="Informacje o nadpłacie",
+            fields=[
+                LlmField(line=1, label="Tytuł podatku"),
+                LlmField(line=2, label="Rodzaj podatku"),
+                LlmField(line=3),
+                LlmField(line=4),
+                LlmField(line=5, label="Co zrobić z nadpłatą", kind="RADIO", option_lines=[6, 7]),
+                LlmField(line=6, label="Nazwa podatku", visible_when=LlmCondition(field_line=5, option_line=6)),
+            ],
+        ),
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
+    fields = spec.pages[0].sections[0].fields
+    # predefined dictionaries may repeat: place of residence and place of birth are two fields
+    assert [(f.label, f.kind) for f in fields] == [
+        ("Tytuł podatku", "SELECT"),
+        ("Miejscowość", "SELECT"),
+        ("Miejscowość urodzenia", "SELECT"),
+        ("Co zrobić z nadpłatą", "RADIO"),
+        ("Nazwa podatku", "SELECT"),
+    ]
+
+
+def test_a_line_with_a_printed_address_is_filled_data_not_a_field():
+    # 01 pdf: the office address sits on the applicant's fill lines ("## ____ ____ ul. Browarna 85")
+    lines = {1: "## ____ ____ ul. Browarna 85", 2: "## ____ . 82-300 Elbląg", 3: "Ulica ____"}
+    secs = chunk(
+        lines,
+        LlmSection(
+            page_title="P",
+            title="Adres nieruchomości",
+            fields=[LlmField(line=1), LlmField(line=2, label="Kod pocztowy i miejscowość"), LlmField(line=3)],
+        ),
+    )
+    spec = to_spec(LlmGlobal(title="x"), secs, "\n".join(lines.values()), with_validators=True)
+    assert [f.label for f in spec.pages[0].sections[0].fields] == ["Ulica"]
