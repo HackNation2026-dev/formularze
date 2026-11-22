@@ -140,6 +140,7 @@ Wszystko przez zmienne środowiskowe / `.env` (`src/formgen/config.py`):
 | `WITH_VALIDATORS`, `WITH_DICTIONARIES`, `WITH_DEPENDENCIES` | true | rozszerzenia opcjonalne I, III, V |
 | `REQUEST_TIMEOUT_SECONDS`, `LOG_LEVEL` | 1800, INFO | limit czasu na jeden plik (504 po przekroczeniu) |
 | `MAX_BATCH_FILES` | 20 | maksymalna liczba plików w `analyze-batch` (413 powyżej) |
+| `MAX_FILENAME_LENGTH`, `FORBIDDEN_FILENAME_CHARS` | 250, `; : > < / \ \| ' * % $` | walidacja nazwy pliku (400 `INVALID_FILENAME`) |
 
 ## REST API
 
@@ -156,8 +157,10 @@ OpenAPI: `GET /docs`, `GET /openapi.json`. Błędy zawsze jako `{"error": {"code
 
 Kody błędów `analyze`: `400 MISSING_FILE`, `400 INVALID_FILENAME` (> 250 znaków lub znaki `; : > < / \ | ' * % $`),
 `401 UNAUTHORIZED`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE`, `415 MIME_MISMATCH` (zawartość sprawdzana
-detektorem Google magika, musi zgadzać się z rozszerzeniem), `422 PROCESSING_FAILED`, `500 INVALID_OUTPUT`
-(pipeline nigdy nie zwraca JSON-a łamiącego reguły), `503 MODEL_UNAVAILABLE`, `504 PROCESSING_TIMEOUT`.
+detektorem Google magika, musi zgadzać się z rozszerzeniem), `500 INVALID_OUTPUT`
+(pipeline nie zwraca JSON-a łamiącego reguły techniczne), `503 MODEL_UNAVAILABLE`, `504 PROCESSING_TIMEOUT`.
+`analyze-batch` dodatkowo: `413 TOO_MANY_FILES`. `validate`: `422 INVALID_FORM_DEFINITION`, `422 INVALID_SAMPLE_VALUES`.
+Każdy endpoint z tokenem: `500 AUTH_MISCONFIGURED`, gdy `AUTH_ENABLED=true` bez `JWT_SECRET`.
 
 Plik jest przetwarzany wyłącznie w pamięci i w katalogu tymczasowym żądania; nic nie jest zapisywane na stałe.
 Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtractor` lub `HeuristicExtractor` po awarii modelu). `X-Partial-Result: true` oznacza, że wynik może nie zawierać całego źródła; `X-Partial-Reasons` podaje przyczyny rozdzielone `; `: `chunk-skipped:<strony>` (fragment pominięty po nieudanych próbach), `llm-truncated:<schemat>` (użyta odpowiedź modelu ucięta na limicie tokenów), `extractor-fallback:<błąd>` (przejście na `HeuristicExtractor`). Każda przyczyna zwiększa `X-Warnings` o 1.
@@ -166,12 +169,13 @@ Nagłówek `X-Extractor` mówi, która ścieżka wygenerowała wynik (`LlmExtrac
 
 | Co | Gdzie | Wynik |
 |---|---|---|
-| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`), develop `d3f0b65` (22.11 08:40) | x86, bez GPU | 15/15; analiza formularza 05 przez lokalny model 85 s (przed #48/#49/#52: 98–232 s) |
-| Golden 05 i 01 vs JSON COI (słowniki z pliku „Słowniki”) | GPU przez tunel | composite 0,92 / 0,92; recall 0,95 / 0,96; ok. 19 s na formularz |
-| SCORE na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm` | cache odpowiedzi | 0,7363 w ok. 10 s |
+| Wymagania Docker i API end-to-end (`scripts/verify_stack.sh`, 14 kontroli), develop `d3f0b65` (22.11 08:40) | x86 (i7-9750H, 12 vCPU), bez GPU | 14/14; analiza formularza 05 przez lokalny model 85 s (poprzednie przebiegi na starszym kodzie: 98–232 s) |
+| Golden 01 i 05 vs JSON COI (`src/formgen/eval/metric.py`, wyniki z `data/output/`, kod `d3f0b65`) | GPU (GTX 1660 Ti, llama.cpp CUDA) | composite 0,925 / 0,919; recall 0,96 / 0,93; F1 0,86 / 0,84; F1 samego przedmiotu wniosku 0,75 / 0,50; 29 s / 37 s |
+| SCORE harnessu na 4 formularzach smoke (01, 04, 05, 09), `make eval-warm`, develop 22.11 | cache odpowiedzi modelu | 0,753 w ok. 20 s (szum między próbkami modelu ok. 0,017) |
 | Rozmiar modelu na samym CPU (`docs/08-implementacja/research/ab-models-cpu.md`) | x86, 6 rdzeni | 0,8B / 2B / 4B: composite 0,89–0,93; prosty formularz 302 / 74 / 242 s |
 | Qwen3.5-4B Q4, generacja | M4 Metal / GTX 1660 Ti / CPU x86 | 12 / 59 / ok. 11 tok/s |
-| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, bez fallbacku heurystycznego) | GPU (Tailscale) | 0 błędów reguł w 9/9; 29–300 s na formularz; golden F1 01 0,864 / 05 0,843 |
+| 9 formularzy do oddania (`data/output/`, kod `d3f0b65`, `LLM_FALLBACK_HEURISTIC=false`) | GPU, 2 formularze naraz | 0 błędów reguł w 9/9; 29–300 s na formularz (najdłużej 08 i 09) |
+| Formularz 08 (6 stron, 136 pól) na samym CPU | x86 | brak pomiaru na kodzie z `main`; jeden pomiar z 22.11 z dodatkową, nieumergowaną zmianą (#55): 1142 s |
 | Tryb bez modelu (`EXTRACTOR=heuristic`) | – | JSON zawsze poprawny; przedmiot wniosku słabszy |
 
 Szczegóły: `docs/08-implementacja/research/` (badania i pomiary), `docs/08-implementacja/DEMO-SETUP.md` (ustawienie na obronę).

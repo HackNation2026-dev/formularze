@@ -13,6 +13,9 @@ Autorytatywny opis działającej aplikacji, ze schematem potoku i ścieżkami mo
 miary: [MODULY.md](../08-implementacja/MODULY.md). Kontrakt REST i konfiguracja: `README.md` (sekcje „Konfiguracja”
 i „REST API”) oraz [SPEC.md](../08-implementacja/SPEC.md).
 
+Interfejsy: `/review/` (serwowany przez API, w obrazie Docker) oraz osobna aplikacja GUI `apps/web`
+(Next.js, [ADR-002](../07-decyzje/ADR-002-gui-nextjs.md)), która woła to samo REST API i nie wchodzi do obrazu Docker backendu.
+
 W skrócie, co istnieje: jeden serwis Python 3.14 / FastAPI (`src/formgen/`) z potokiem
 `ingest -> extract (LLM przez llama.cpp z gramatyką JSON, fallback heurystyczny) -> compose (deterministyczny
 szablon COI) -> schema (reguły techniczne)`, kontenery `api`, `llm`, `tika` w `compose.yaml`, interfejs przeglądu
