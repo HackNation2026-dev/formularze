@@ -8,7 +8,7 @@ Repozytorium zespołu Formularze na HackNation 2026 (publiczne). Organizacja: `H
 
 ## Stan
 
-Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 224 testów (`make test`) i 12 testów Playwright interfejsu `/review/`; osobna aplikacja GUI `apps/web` (Next.js) ma własne testy i CI `web.yml`. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
+Aplikacja działa end-to-end: upload pliku formularza (PDF/DOC/DOCX/ODS/XLSX/JPG/PNG) -> JSON `FormDefinition` dla Generatora Formularzy COI. Pipeline: parsery formatów -> lokalny LLM (llama.cpp, Qwen3.5-4B, gramatyka JSON) z fallbackiem heurystycznym -> deterministyczny kompilator szablonów COI -> walidator reguł. 224 testów (`make test`) i 15 testów Playwright interfejsu `/review/`; osobna aplikacja GUI `apps/web` (Next.js) ma własne testy i CI `web.yml`. Wyniki dla 9 formularzy (2 wzorcowe i 7 do oceny): `data/output/`. Szczegóły implementacji: `docs/08-implementacja/`.
 
 ## Zacznij tutaj
 
@@ -102,7 +102,7 @@ Ten sam serwer udostępnia interfejs pod `http://localhost:8000/review/` (pkt 3.
 ```bash
 npm ci && npm run ui:assets      # PDF.js i JSONata z package-lock.json -> src/formgen/static/review/vendor/
 make run                         # http://localhost:8000/review/
-npm run check:ui && npm run test:ui   # składnia, format, zasoby; 12 testów Playwright (Chrome)
+npm run check:ui && npm run test:ui   # składnia, format, zasoby; 15 testów Playwright (Chrome)
 ```
 
 Szczegóły i scenariusz demonstracji: [UI-PRZEGLAD](docs/08-implementacja/UI-PRZEGLAD.md).

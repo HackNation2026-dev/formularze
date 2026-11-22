@@ -1,6 +1,6 @@
 ---
 wersja: 0.5.0
-aktualizacja: 2026-11-22 09:10
+aktualizacja: 2026-11-22
 status: stan na ostatnie godziny przed zgłoszeniem
 ---
 
@@ -8,17 +8,18 @@ status: stan na ostatnie godziny przed zgłoszeniem
 
 Jeden dokument zamiast szukania po sesjach, gałęziach i pamięci agentów. Czytaj od góry: co jury dostaje, co już jest,
 czego brakuje, kto co robi teraz. Termin zgłoszenia: potwierdź na Discordzie (wcześniejsze ustalenie: 22.11 około 10:00).
+Sekcje 1–2 poprawione w audycie dokumentacji 22.11 (po release #69); sekcje 3–4b to zapis stanu na 09:10.
 
 ## 1. Źródło prawdy
 
 | Co | Gdzie |
 |---|---|
 | Repo zespołu | `HackNation2026-dev/formularze`, klon `~/.t3/projects/formularze` |
-| Stan dla jury | gałąź `main` = `d160744` (release #60, 22.11 09:05) == `develop`; `verify_stack.sh` 14/14 na x86 CPU dla backendu `d3f0b65` (analyze 85 s). Zawiera też GUI `apps/web` (Next.js, PR #59 Kacpra, poza Dockerem backendu). **`main` zamrożony do 11:00.** |
-| Praca bieżąca | gałąź `develop`: po 08:15 ma #48/#49/#52 (CPU 05: 207 s -> 122 s), #51 (ten dokument), #53 (README Zgłoszenie), #54 (architektura zgodna z kodem) |
+| Stan dla jury | gałąź `main` == `develop` (release #69); przedtem `d160744` (release #60, 22.11 09:05); `verify_stack.sh` 14/14 na x86 CPU dla backendu `d3f0b65` (analyze 85 s). Zawiera też GUI `apps/web` (Next.js, PR #59 Kacpra, poza Dockerem backendu). **`main` zamrożony do 11:00.** |
+| Praca bieżąca | gałąź `develop` (obie gałęzie chronione: PR i zielone `tests` + `docs`); zawiera #48/#49/#52 (CPU 05: 207 s -> 122 s), #51 (ten dokument), #53 (README Zgłoszenie), #54 (architektura zgodna z kodem). Otwarte PR-y spoza zgłoszenia: #55, #20 |
 | Stary katalog scratch | `~/.t3/projects/hacknation-cyfr-forumla` – bez remote, kod rozjechany, **nie pracuj tam**. Projekt T3 wskazuje ten katalog, stąd nowe sesje lądują w złym repo. Przepnij projekt T3 na `~/.t3/projects/formularze`. |
 | Serwer demo (GPU) | Legion, `llmsrv` (Qwen3.5-4B, port 18081), tunel Cloudflare `cfl`, URL zmienia się po restarcie: `docker logs cfl` |
-| Stack jury (CPU) | Legion `~/formularze` na `7e9dd2b`, `formularze-api-1` działa |
+| Stack jury (CPU) | stan na 09:10: Legion `~/formularze` na `7e9dd2b`, `formularze-api-1` działa; `verify_stack.sh` 14/14 przeszedł na `d3f0b65` |
 
 ## 2. Co jury ocenia i co mamy
 
@@ -26,14 +27,14 @@ Kryteria: kompletność 30 %, intuicyjność 20 %, jakość kodu 20 %, wdrożeni
 
 | Wymaganie | Stan | Dowód |
 |---|---|---|
-| REST API, 8 formatów, walidacja uploadu, JWT, limity | JEST | `src/formgen/api`, 212 testów, `verify_stack.sh` 14/14 |
-| JSON zgodny z JSON-ami referencyjnymi COI | JEST | golden 05 / 01 composite 0,92 / 0,92 |
+| REST API, 8 formatów, walidacja uploadu, JWT, limity | JEST | `src/formgen/api`, 224 testy pytest, `verify_stack.sh` 14/14 |
+| JSON zgodny z JSON-ami referencyjnymi COI | JEST | golden 01 / 05 composite 0,925 / 0,919 (recall 0,96 / 0,93) |
 | Zasady projektowania COI (strony, sekcje, kontakt, FINISH) | JEST | deterministyczny kompilator szablonów |
 | Dokumentacja architektury | JEST | `docs/04-architektura/`, `docs/08-implementacja/` |
 | I. Słowniki i dane inicjalne | JEST | `schema/dictionaries.py`, nazwy z dokumentu „Słowniki” |
 | II. Propozycja nowego słownika | JEST | `NOWE-SLOWNIKI.md`, rejestr `PROPOSED` (05, 07, 09) |
 | III. Zależności dynamiczne (JSONata) | JEST | warunki widoczności, lint JSONata, test cykli |
-| IV. Frontend upload + JSON | JEST | `/review/`, wsad wielu plików, 14 testów Playwright |
+| IV. Frontend upload + JSON | JEST | `/review/`, wsad wielu plików, testy Playwright `tests/ui/review.spec.cjs` |
 | V. Wizualizacja e-usługi | JEST | `/review/` symuluje strony i warunki na żywo |
 | VI. Walidacje pól, batch, korekta in-place | JEST | `validators.py`, `/forms/validate`, `analyze-batch`, szybka edycja w UI |
 | Docker non-root, przypięte tagi, sekrety przez env | JEST | `Dockerfile`, `compose.yaml` |
@@ -44,7 +45,7 @@ Zgłoszenie formalne:
 | Element | Stan |
 |---|---|
 | Tytuł i opis projektu | JEST – README sekcja „Zgłoszenie” (PR #53) |
-| Prezentacja PDF (max 10 slajdów) | **BRAK** – jest tylko treść w `docs/06-prezentacja/SLAJDY-I-FILM.md` |
+| Prezentacja PDF (max 10 slajdów) | **W TOKU** – szkic `docs/06-prezentacja/prezentacja-szkic-2026-11-22.pdf`, treść w `docs/06-prezentacja/SLAJDY-I-FILM.md` |
 | Wynikowe JSON-y 01–09 | JEST (22.11 09:00) – `data/output/` z kodu `d3f0b65`, GPU, bez fallbacku, 0 błędów reguł, audyt treści czysty (PR #58) |
 | Film (max 3 min) w repo | **BRAK** – scenariusz z minutażem jest w `SLAJDY-I-FILM.md` |
 | Repozytorium publiczne | JEST |
@@ -53,7 +54,7 @@ Zgłoszenie formalne:
 
 | Rzecz | Decyzja |
 |---|---|
-| PR #48, #49, #50 (CPU: checkpointy, prefill prefiksów, 2 równoległe wywołania; 05 na CPU 207 s -> 122 s) | ZMERGOWANE 08:00 (#50 jako #52 po rebase). Czeka `verify_stack.sh` i release. |
+| PR #48, #49, #50 (CPU: checkpointy, prefill prefiksów, 2 równoległe wywołania; 05 na CPU 207 s -> 122 s) | ZMERGOWANE 08:00 (#50 jako #52 po rebase). `verify_stack.sh` 14/14 na `d3f0b65`, release do `main` (#69). |
 | PR #20 (blind_eval, testy czerwone) | Nie blokuje. Autor naprawia testy albo zamykamy po konkursie. |
 | GUI `apps/web` (Next.js, PR #59) | Weszło do `main` bezpośrednio o 08:18 (poza procesem). Zostaje: nie dotyka backendu, Dockera ani `compose.yaml` (Docker kopiuje tylko `src/`). Demo backendu pokazuje `/review/`; GUI pokazuje jego autor. |
 | Issue #35–#39 (graf zadań z osieroconego sprintu) | ZAMKNIĘTE 08:00; zostaje #40 jako lista odbioru. |
