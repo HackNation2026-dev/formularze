@@ -35,6 +35,7 @@ ZASADY:
 - line: numer wiersza z etykietą pola (wiersz z nazwą pola, nie sam "____").
 - label: NIE podawaj, etykietę bierzemy z wiersza line. Wyjątek: wiersz to całe zdanie, polecenie typu "proszę:" lub sam numer; wtedy krótka etykieta w prostym języku.
 - kind: TEXT_FIELD (krótki tekst), TEXTAREA (opis, uzasadnienie), NUMBER (kwota, liczba, powierzchnia), DATEPICKER (data), RADIO (jedna opcja z kratek), CHECKBOX (wiele opcji), SELECT (jedna opcja z listy > 5 opcji), FILE_UPLOADER (załącznik, dokument do dołączenia), TEXT_BLOCK (informacja dla użytkownika, bez wpisywania).
+- kind TEXT_BLOCK tylko dla wiersza bez '____' i bez '☐'.
 - option_lines: dla RADIO/CHECKBOX/SELECT numery wierszy opcji, w kolejności.
 - Lista kratek '☐' pod jednym nagłówkiem to JEDNO pole, a option_lines to WSZYSTKIE jej wiersze, choćby było ich kilkadziesiąt. Każdy nagłówek z własną listą kratek to osobne pole; nie łącz list. Polecenie w liczbie mnogiej ("wskaż rodzaje", "wybierz ... z listy") lub brak ograniczenia do jednej kratki oznacza CHECKBOX, także dla długiej listy. Pozycja bez kratki z miejscem do wpisania (np. "Inny ____") to osobne pole TEXT_FIELD, nie opcja.
 - Lista wykluczających się wariantów po zdaniu typu "proszę:", "wybierz", "zaznacz" (np. "1) zaliczyć ... 2) zwrócić ...") to JEDNO pole RADIO z opcjami, nie osobne pola tekstowe. Pole do wpisania przy wariancie (np. "z tytułu ____") to osobne pole z visible_when na tę opcję.
@@ -54,7 +55,7 @@ PRZYKŁAD. Fragment tekstu:
   [43] Numer rachunku ____
 Poprawny wynik (jedna sekcja, trzy pola; etykieta tylko dla wiersza-polecenia):
   {{"page_title": "Informacje o nadpłacie", "title": "Rozliczenie nadpłaty", "fields": [
-    {{"line": 40, "label": "Co zrobić z nadpłatą", "kind": "RADIO", "option_lines": [41, 42]}},
+    {{"line": 40, "label": "Wybierz, co mamy zrobić z nadpłatą", "kind": "RADIO", "option_lines": [41, 42]}},
     {{"line": 41, "label": "Nazwa podatku", "visible_when": {{"field_line": 40, "option_line": 41}}}},
     {{"line": 43, "visible_when": {{"field_line": 40, "option_line": 42}}}}]}}
 PRZYKŁAD list wielokrotnego wyboru. Fragment tekstu:
